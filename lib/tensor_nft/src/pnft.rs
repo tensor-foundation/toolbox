@@ -1,7 +1,9 @@
-use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{
-    instruction::Instruction,
-    program::{invoke, invoke_signed},
+use anchor_lang::{
+    prelude::*,
+    solana_program::{
+        instruction::Instruction,
+        program::{invoke, invoke_signed},
+    },
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -18,13 +20,7 @@ use mpl_token_metadata::{
 };
 use vipers::throw_err;
 
-#[error_code]
-pub enum ErrorCode {
-    #[msg("metadata account does not match")]
-    BadMetadata = 0,
-    #[msg("rule set for programmable nft does not match")]
-    BadRuleSet = 1,
-}
+use crate::*;
 
 #[inline(never)]
 fn assert_decode_metadata<'info>(
@@ -40,11 +36,11 @@ fn assert_decode_metadata<'info>(
         &mpl_token_metadata::id(),
     );
     if key != *metadata_account.to_account_info().key {
-        throw_err!(BadMetadata);
+        throw_err!(TensorError::BadMetadata);
     }
     // Check account owner (redundant because of find_program_address above, but why not).
     if *metadata_account.owner != mpl_token_metadata::id() {
-        throw_err!(BadMetadata);
+        throw_err!(TensorError::BadMetadata);
     }
 
     Ok(Metadata::from_account_info(metadata_account)?)
@@ -154,7 +150,7 @@ fn prep_pnft_transfer_ix<'info>(
 
                     //1. validate
                     if rule_set != *rules_acc.key {
-                        throw_err!(BadRuleSet);
+                        throw_err!(TensorError::BadRuleSet);
                     }
 
                     //2. add to builder
