@@ -80,15 +80,15 @@ pub fn transfer_lamports_from_pda<'info>(
     Ok(())
 }
 
-pub(crate) struct FromExternal<'b, 'info> {
-    pub(crate) from: &'b AccountInfo<'info>,
-    pub(crate) sys_prog: &'b AccountInfo<'info>,
+pub struct FromExternal<'b, 'info> {
+    pub from: &'b AccountInfo<'info>,
+    pub sys_prog: &'b AccountInfo<'info>,
 }
-pub(crate) enum FromAcc<'a, 'info> {
+pub enum FromAcc<'a, 'info> {
     Pda(&'a AccountInfo<'info>),
     External(&'a FromExternal<'a, 'info>),
 }
-pub(crate) fn transfer_creators_fee<'a, 'info>(
+pub fn transfer_creators_fee<'a, 'info>(
     from: &'a FromAcc<'a, 'info>,
     creators: &'a Vec<Creator>,
     creator_accounts: &mut Iter<AccountInfo<'info>>,
