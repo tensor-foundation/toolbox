@@ -1,11 +1,15 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum CNFTError {
+pub enum CNftError {
     #[msg("bad royalties")]
-    BadRoyaltiesPct,
+    BadRoyaltiesPct = 9001,
     #[msg("insufficient balance")]
-    InsufficientBalance,
+    InsufficientBalance = 9002,
     #[msg("creator mismatch")]
-    CreatorMismatch,
+    CreatorMismatch = 9003,
+    #[msg("failed leaf verification")]
+    FailedLeafVerification = 9004,
+    #[msg("arithmetic error")]
+    ArithmeticError = 9005,
 }
