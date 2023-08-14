@@ -2,21 +2,18 @@
 
 use std::slice::Iter;
 
-use anchor_lang::{InstructionData, prelude::*, solana_program::{
-    program::invoke,
-    system_instruction,
-}};
-use anchor_lang::solana_program::instruction::Instruction;
-use anchor_lang::solana_program::keccak::hashv;
-use anchor_lang::solana_program::program::invoke_signed;
-use anchor_lang::solana_program::system_program;
-use mpl_bubblegum::{
-    self,
-    state::metaplex_adapter::Creator,
+use anchor_lang::{
+    prelude::*,
+    solana_program::{
+        instruction::Instruction,
+        keccak::hashv,
+        program::{invoke, invoke_signed},
+        system_instruction, system_program,
+    },
+    InstructionData,
 };
-use mpl_bubblegum::utils::get_asset_id;
-
-use vipers::{prelude::*};
+use mpl_bubblegum::{self, state::metaplex_adapter::Creator, utils::get_asset_id};
+use vipers::prelude::*;
 
 use crate::{CNftError, TMetadataArgs};
 
@@ -159,10 +156,12 @@ pub struct DataHashArgs {
     pub creator_verified: Vec<bool>,
     pub seller_fee_basis_points: u16,
 }
+
 pub enum MetadataSrc {
     Metadata(TMetadataArgs),
     DataHash(DataHashArgs),
 }
+
 pub struct MakeCnftArgs<'a, 'info> {
     pub nonce: u64,
     pub metadata_src: MetadataSrc,
@@ -259,10 +258,7 @@ pub fn calc_creators_fee(
     optional_royalty_pct: Option<u16>,
 ) -> Result<u64> {
     let creator_fee_bps = if let Some(optional_royalty_pct) = optional_royalty_pct {
-        require!(
-            optional_royalty_pct <= 100,
-            CNftError::BadRoyaltiesPct
-        );
+        require!(optional_royalty_pct <= 100, CNftError::BadRoyaltiesPct);
 
         // If optional passed, pay optional royalties
         unwrap_checked!({
@@ -318,10 +314,12 @@ pub struct FromExternal<'b, 'info> {
     pub from: &'b AccountInfo<'info>,
     pub sys_prog: &'b AccountInfo<'info>,
 }
+
 pub enum FromAcc<'a, 'info> {
     Pda(&'a AccountInfo<'info>),
     External(&'a FromExternal<'a, 'info>),
 }
+
 pub fn transfer_creators_fee<'a, 'info>(
     from: &'a FromAcc<'a, 'info>,
     creators: &'a Vec<Creator>,

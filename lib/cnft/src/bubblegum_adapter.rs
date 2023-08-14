@@ -1,12 +1,8 @@
-use anchor_lang::{
-    prelude::*,
-};
+use anchor_lang::prelude::*;
 use mpl_bubblegum::{
     self,
-    state::{
-        metaplex_adapter::{
-            Collection, Creator, MetadataArgs, TokenProgramVersion, TokenStandard, UseMethod, Uses,
-        },
+    state::metaplex_adapter::{
+        Collection, Creator, MetadataArgs, TokenProgramVersion, TokenStandard, UseMethod, Uses,
     },
 };
 
@@ -132,10 +128,10 @@ impl TMetadataArgs {
             name: self.name.clone(),
             symbol: self.symbol.clone(),
             uri: self.uri.clone(),
-            seller_fee_basis_points: self.seller_fee_basis_points.clone(),
-            primary_sale_happened: self.primary_sale_happened.clone(),
-            is_mutable: self.is_mutable.clone(),
-            edition_nonce: self.edition_nonce.clone(),
+            seller_fee_basis_points: self.seller_fee_basis_points,
+            primary_sale_happened: self.primary_sale_happened,
+            is_mutable: self.is_mutable,
+            edition_nonce: self.edition_nonce,
             token_standard: self.token_standard.clone().map(TokenStandard::from),
             collection: self.collection.clone().map(Collection::from),
             uses: self.uses.clone().map(Uses::from),
