@@ -6,9 +6,10 @@ use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction, system_program},
 };
+use mpl_bubblegum::state::metaplex_adapter::Creator;
 use vipers::prelude::*;
 
-use crate::{TCreator, TensorError};
+use crate::TensorError;
 
 pub const HUNDRED_PCT_BPS: u16 = 10000;
 
@@ -97,6 +98,58 @@ pub struct FromExternal<'b, 'info> {
 pub enum FromAcc<'a, 'info> {
     Pda(&'a AccountInfo<'info>),
     External(&'a FromExternal<'a, 'info>),
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Eq, Debug, Clone)]
+pub struct TCreator {
+    pub address: Pubkey,
+    pub verified: bool,
+    // In percentages, NOT basis points ;) Watch out!
+    pub share: u8,
+}
+
+//into bubblgum
+impl From<TCreator> for Creator {
+    fn from(creator: TCreator) -> Self {
+        Creator {
+            address: creator.address,
+            verified: creator.verified,
+            share: creator.share,
+        }
+    }
+}
+
+//into token meta
+impl From<TCreator> for mpl_token_metadata::state::Creator {
+    fn from(creator: TCreator) -> Self {
+        mpl_token_metadata::state::Creator {
+            address: creator.address,
+            verified: creator.verified,
+            share: creator.share,
+        }
+    }
+}
+
+//from bubblegum
+impl From<Creator> for TCreator {
+    fn from(creator: Creator) -> Self {
+        TCreator {
+            address: creator.address,
+            verified: creator.verified,
+            share: creator.share,
+        }
+    }
+}
+
+//from token meta
+impl From<mpl_token_metadata::state::Creator> for TCreator {
+    fn from(creator: mpl_token_metadata::state::Creator) -> Self {
+        TCreator {
+            address: creator.address,
+            verified: creator.verified,
+            share: creator.share,
+        }
+    }
 }
 
 pub fn transfer_creators_fee<'a, 'info>(
