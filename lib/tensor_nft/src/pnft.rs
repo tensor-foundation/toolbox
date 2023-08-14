@@ -23,7 +23,7 @@ use vipers::throw_err;
 use crate::*;
 
 #[inline(never)]
-fn assert_decode_metadata<'info>(
+pub fn assert_decode_metadata<'info>(
     nft_mint: &Account<'info, Mint>,
     metadata_account: &UncheckedAccount<'info>,
 ) -> Result<Metadata> {
