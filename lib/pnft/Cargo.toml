@@ -1,0 +1,11 @@
+[package]
+name = "pnft"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+anchor-lang = "=0.26.0"
+anchor-spl = { version = "=0.26.0", features =  ["default"] }
+mpl-token-metadata = { version="=1.8.3", features = [ "no-entrypoint" ] }
+mpl-token-auth-rules = "=1.2.0"
+vipers = {path= '../vipers' }

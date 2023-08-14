@@ -1,0 +1,7 @@
+name: "Setup"
+description: "Setup"
+runs:
+  using: "composite"
+  steps:
+      - run: git submodule update --init --recursive --depth 1
+        shell: bash
