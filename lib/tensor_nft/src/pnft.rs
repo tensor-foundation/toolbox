@@ -254,3 +254,20 @@ pub fn send_pnft(
 
     Ok(())
 }
+
+#[derive(Accounts)]
+pub struct ProgNftShared<'info> {
+    //can't deserialize directly coz Anchor traits not implemented
+    /// CHECK: address below
+    #[account(address = mpl_token_metadata::id())]
+    pub token_metadata_program: UncheckedAccount<'info>,
+
+    //sysvar ixs don't deserialize in anchor
+    /// CHECK: address below
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions: UncheckedAccount<'info>,
+
+    /// CHECK: address below
+    #[account(address = mpl_token_auth_rules::id())]
+    pub authorization_rules_program: UncheckedAccount<'info>,
+}
