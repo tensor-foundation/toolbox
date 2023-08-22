@@ -7,7 +7,8 @@ use anchor_lang::{
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount},
+    token,
+    token::{Mint, Token, TokenAccount, Transfer},
 };
 use mpl_token_metadata::{
     self,
@@ -244,6 +245,36 @@ pub fn send_pnft(
     signer_seeds: Option<&[&[&[u8]]]>,
     args: PnftTransferArgs,
 ) -> Result<()> {
+    // for some reason for some old nfts, the user can no longer delist with this error
+    // https://solscan.io/tx/4EbK8Us3c3mixGY4Y6zUx4pRoarWHJ718PtU8vDnAkcC6GmVtBWi8jotZ8koML8c94JPmQB6jHjQnPEBb83Mfv7C
+    // hence have to do a normal transfer
+
+    let metadata = assert_decode_metadata(args.nft_mint, args.nft_metadata)?;
+    if metadata.token_standard.is_none()
+        || metadata.token_standard.unwrap() != TokenStandard::ProgrammableNonFungible
+    {
+        // msg!("non-pnft / no token std, normal transfer");
+
+        let ctx = CpiContext::new(
+            args.token_program.to_account_info(),
+            Transfer {
+                from: args.source_ata.to_account_info(),
+                to: args.dest_ata.to_account_info(),
+                authority: args.authority_and_owner.to_account_info(),
+            },
+        );
+
+        if let Some(signer_seeds) = signer_seeds {
+            token::transfer(ctx.with_signer(signer_seeds), 1)?;
+        } else {
+            token::transfer(ctx, 1)?;
+        }
+
+        return Ok(());
+    }
+
+    // --------------------------------------- pnft transfer
+
     let (transfer_ix, account_infos) = prep_pnft_transfer_ix(args)?;
 
     if let Some(signer_seeds) = signer_seeds {
