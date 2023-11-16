@@ -1948,7 +1948,7 @@ dependencies = [
 
 [[package]]
 name = "tensor_nft"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
