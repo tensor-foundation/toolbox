@@ -7,6 +7,7 @@ use anchor_lang::{
     solana_program::{program::invoke, system_instruction, system_program},
 };
 use mpl_bubblegum::state::metaplex_adapter::Creator;
+use mpl_token_metadata::state::TokenStandard;
 use vipers::prelude::*;
 
 use crate::TensorError;
@@ -35,15 +36,24 @@ pub fn calc_fees(amount: u64, fee_bps: u16, taker_broker_pct: u16) -> Result<(u6
 pub fn calc_creators_fee(
     seller_fee_basis_points: u16,
     amount: u64,
+    token_standard: Option<TokenStandard>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<u64> {
-    let creator_fee_bps = if let Some(optional_royalty_pct) = optional_royalty_pct {
-        require!(optional_royalty_pct <= 100, TensorError::BadRoyaltiesPct);
+    // Enforce royalties on pnfts.
+    let adj_optional_royalty_pct =
+        if let Some(TokenStandard::ProgrammableNonFungible) = token_standard {
+            Some(100)
+        } else {
+            optional_royalty_pct
+        };
+
+    let creator_fee_bps = if let Some(royalty_pct) = adj_optional_royalty_pct {
+        require!(royalty_pct <= 100, TensorError::BadRoyaltiesPct);
 
         // If optional passed, pay optional royalties
         unwrap_checked!({
             (seller_fee_basis_points as u64)
-                .checked_mul(optional_royalty_pct as u64)?
+                .checked_mul(royalty_pct as u64)?
                 .checked_div(100_u64)
         })
     } else {
