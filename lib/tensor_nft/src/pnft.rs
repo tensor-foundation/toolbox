@@ -36,7 +36,7 @@ pub fn assert_decode_metadata<'info>(
         ],
         &mpl_token_metadata::id(),
     );
-    if key != *metadata_account.to_account_info().key {
+    if key != metadata_account.key() {
         throw_err!(TensorError::BadMetadata);
     }
     // Check account owner (redundant because of find_program_address above, but why not).

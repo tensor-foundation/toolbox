@@ -6,6 +6,7 @@ use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction, system_program},
 };
+use anchor_spl::{associated_token::AssociatedToken, token::Token};
 use mpl_bubblegum::state::metaplex_adapter::Creator;
 use mpl_token_metadata::state::TokenStandard;
 use vipers::prelude::*;
@@ -13,24 +14,53 @@ use vipers::prelude::*;
 use crate::TensorError;
 
 pub const HUNDRED_PCT_BPS: u16 = 10000;
+pub const GAMESHIFT_FEE_BPS: u16 = 200;
+pub const GAMESHIFT_BROKER_PCT: u16 = 50; // Out of 100
 
-pub fn calc_fees(amount: u64, fee_bps: u16, taker_broker_pct: u16) -> Result<(u64, u64)> {
+pub mod gameshift {
+    use anchor_lang::declare_id;
+    declare_id!("3g2nyraTXqEKke3sTtZw9JtfjCo8Hzw6qhKe8K2hrYuf");
+}
+
+pub fn calc_fees(
+    amount: u64,
+    fee_bps: u16,
+    maker_broker_pct: u16,
+    maker_broker: Option<Pubkey>,
+    _taker_broker: Option<Pubkey>,
+) -> Result<(u64, u64, u64)> {
+    let (fee_bps, maker_broker_pct) = if maker_broker == Some(crate::gameshift::ID) {
+        // gameshift fee schedule
+        (GAMESHIFT_FEE_BPS, GAMESHIFT_BROKER_PCT)
+    } else {
+        (fee_bps, maker_broker_pct)
+    };
+
     let full_fee = unwrap_checked!({
         (fee_bps as u64)
             .checked_mul(amount)?
             .checked_div(HUNDRED_PCT_BPS as u64)
     });
-    let broker_fee = unwrap_checked!({
+    let taker_broker_fee = 0; // todo: taker broker not enabled
+    let maker_broker_fee = unwrap_checked!({
         full_fee
-            .checked_mul(taker_broker_pct as u64)?
+            .checked_mul(maker_broker_pct as u64)?
             .checked_div(100)
     });
-    let protocol_fee = unwrap_checked!({ full_fee.checked_sub(broker_fee) });
+    let protocol_fee = unwrap_checked!({
+        full_fee
+            .checked_sub(maker_broker_fee)
+            .unwrap()
+            .checked_sub(taker_broker_fee)
+    });
 
     // Stupidity check, broker should never be higher than main fee (== when zero)
-    require!(protocol_fee >= broker_fee, TensorError::ArithmeticError);
+    require!(
+        protocol_fee >= maker_broker_fee + taker_broker_fee,
+        TensorError::ArithmeticError
+    );
 
-    Ok((protocol_fee, broker_fee))
+    Ok((protocol_fee, maker_broker_fee, taker_broker_fee))
 }
 
 pub fn calc_creators_fee(
@@ -162,12 +192,29 @@ impl From<mpl_token_metadata::state::Creator> for TCreator {
     }
 }
 
+#[repr(u8)]
+pub enum CreatorFeeMode<'a, 'info> {
+    Sol {
+        from: &'a FromAcc<'a, 'info>,
+    },
+    Spl {
+        associated_token_program: &'a Program<'info, AssociatedToken>,
+        token_program: &'a Program<'info, Token>,
+        system_program: &'a Program<'info, System>,
+        currency: &'a AccountInfo<'info>,
+        from: &'a AccountInfo<'info>,
+        from_token_acc: &'a AccountInfo<'info>,
+        rent_payer: &'a AccountInfo<'info>,
+    },
+}
+
 pub fn transfer_creators_fee<'a, 'info>(
-    from: &'a FromAcc<'a, 'info>,
     //using TCreator here so that this fn is agnostic to normal NFTs and cNFTs
     creators: &'a Vec<TCreator>,
     creator_accounts: &mut Iter<AccountInfo<'info>>,
     creator_fee: u64,
+    // put not-in-common args in an enum so the invoker doesn't require it
+    mode: &'a CreatorFeeMode<'a, 'info>,
 ) -> Result<u64> {
     // Send royalties: taken from AH's calculation:
     // https://github.com/metaplex-foundation/metaplex-program-library/blob/2320b30ec91b729b153f0c0fe719f96d325b2358/auction-house/program/src/utils.rs#L366-L471
@@ -179,37 +226,87 @@ pub fn transfer_creators_fee<'a, 'info>(
             TensorError::CreatorMismatch
         );
 
-        let rent = Rent::get()?.minimum_balance(current_creator_info.data_len());
-
         let pct = creator.share as u64;
         let creator_fee = unwrap_checked!({ pct.checked_mul(creator_fee)?.checked_div(100) });
 
-        // Prevents InsufficientFundsForRent, where creator acc doesn't have enough fee
-        // https://explorer.solana.com/tx/vY5nYA95ELVrs9SU5u7sfU2ucHj4CRd3dMCi1gWrY7MSCBYQLiPqzABj9m8VuvTLGHb9vmhGaGY7mkqPa1NLAFE
-        if unwrap_int!(current_creator_info.lamports().checked_add(creator_fee)) < rent {
-            //skip current creator, we can't pay them
-            continue;
+        match mode {
+            CreatorFeeMode::Sol { from: _ } => {
+                // Prevents InsufficientFundsForRent, where creator acc doesn't have enough fee
+                // https://explorer.solana.com/tx/vY5nYA95ELVrs9SU5u7sfU2ucHj4CRd3dMCi1gWrY7MSCBYQLiPqzABj9m8VuvTLGHb9vmhGaGY7mkqPa1NLAFE
+                let rent = Rent::get()?.minimum_balance(current_creator_info.data_len());
+                if unwrap_int!(current_creator_info.lamports().checked_add(creator_fee)) < rent {
+                    //skip current creator, we can't pay them
+                    continue;
+                }
+            }
+            CreatorFeeMode::Spl {
+                associated_token_program: _,
+                token_program: _,
+                system_program: _,
+                currency: _,
+                from: _,
+                from_token_acc: _,
+                rent_payer: _,
+            } => {}
         }
 
         remaining_fee = unwrap_int!(remaining_fee.checked_sub(creator_fee));
         if creator_fee > 0 {
-            match from {
-                FromAcc::Pda(from_pda) => {
-                    transfer_lamports_from_pda(from_pda, current_creator_info, creator_fee)?;
-                }
-                FromAcc::External(from_ext) => {
-                    let FromExternal { from, sys_prog } = from_ext;
-                    invoke(
-                        &system_instruction::transfer(
-                            from.key,
-                            current_creator_info.key,
-                            creator_fee,
+            match mode {
+                CreatorFeeMode::Sol { from } => match from {
+                    FromAcc::Pda(from_pda) => {
+                        transfer_lamports_from_pda(from_pda, current_creator_info, creator_fee)?;
+                    }
+                    FromAcc::External(from_ext) => {
+                        let FromExternal { from, sys_prog } = from_ext;
+                        invoke(
+                            &system_instruction::transfer(
+                                from.key,
+                                current_creator_info.key,
+                                creator_fee,
+                            ),
+                            &[
+                                (*from).clone(),
+                                current_creator_info.clone(),
+                                (*sys_prog).clone(),
+                            ],
+                        )?;
+                    }
+                },
+
+                CreatorFeeMode::Spl {
+                    associated_token_program,
+                    token_program,
+                    system_program,
+                    currency,
+                    from,
+                    from_token_acc: from_ata,
+                    rent_payer,
+                } => {
+                    let current_creator_ata_info = next_account_info(creator_accounts)?;
+
+                    anchor_spl::associated_token::create_idempotent(CpiContext::new(
+                        associated_token_program.to_account_info(),
+                        anchor_spl::associated_token::Create {
+                            payer: rent_payer.to_account_info(),
+                            associated_token: current_creator_ata_info.to_account_info(),
+                            authority: current_creator_info.to_account_info(),
+                            mint: currency.to_account_info(),
+                            system_program: system_program.to_account_info(),
+                            token_program: token_program.to_account_info(),
+                        },
+                    ))?;
+
+                    anchor_spl::token::transfer(
+                        CpiContext::new(
+                            token_program.to_account_info(),
+                            anchor_spl::token::Transfer {
+                                from: from_ata.to_account_info(),
+                                to: current_creator_ata_info.to_account_info(),
+                                authority: from.to_account_info(),
+                            },
                         ),
-                        &[
-                            (*from).clone(),
-                            current_creator_info.clone(),
-                            (*sys_prog).clone(),
-                        ],
+                        creator_fee,
                     )?;
                 }
             }
