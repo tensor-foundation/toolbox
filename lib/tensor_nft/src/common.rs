@@ -1,14 +1,13 @@
-#![allow(dead_code)]
-
-use std::slice::Iter;
+#![allow(clippy::result_large_err)]
 
 use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction, system_program},
 };
 use anchor_spl::{associated_token::AssociatedToken, token::Token};
-use mpl_bubblegum::state::metaplex_adapter::Creator;
-use mpl_token_metadata::state::TokenStandard;
+use mpl_bubblegum::types::Creator;
+use mpl_token_metadata::types::TokenStandard;
+use std::slice::Iter;
 use vipers::prelude::*;
 
 use crate::TensorError;
@@ -160,9 +159,9 @@ impl From<TCreator> for Creator {
 }
 
 //into token meta
-impl From<TCreator> for mpl_token_metadata::state::Creator {
+impl From<TCreator> for mpl_token_metadata::types::Creator {
     fn from(creator: TCreator) -> Self {
-        mpl_token_metadata::state::Creator {
+        mpl_token_metadata::types::Creator {
             address: creator.address,
             verified: creator.verified,
             share: creator.share,
@@ -182,8 +181,8 @@ impl From<Creator> for TCreator {
 }
 
 //from token meta
-impl From<mpl_token_metadata::state::Creator> for TCreator {
-    fn from(creator: mpl_token_metadata::state::Creator) -> Self {
+impl From<mpl_token_metadata::types::Creator> for TCreator {
+    fn from(creator: mpl_token_metadata::types::Creator) -> Self {
         TCreator {
             address: creator.address,
             verified: creator.verified,

@@ -1,23 +1,15 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{
-        instruction::Instruction,
-        program::{invoke, invoke_signed},
-    },
-};
+#![allow(clippy::result_large_err)]
+
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token,
     token::{Mint, Token, TokenAccount, Transfer},
 };
 use mpl_token_metadata::{
-    self,
-    instruction::{
-        builders::{DelegateBuilder, TransferBuilder},
-        DelegateArgs, InstructionBuilder, TransferArgs,
-    },
-    processor::AuthorizationData,
-    state::{Metadata, ProgrammableConfig::V1, TokenMetadataAccount, TokenStandard},
+    accounts::Metadata,
+    instructions::{DelegateTransferV1CpiBuilder, TransferV1CpiBuilder},
+    types::{AuthorizationData, ProgrammableConfig, TokenStandard},
 };
 use vipers::throw_err;
 
@@ -28,23 +20,16 @@ pub fn assert_decode_metadata<'info>(
     nft_mint: &Account<'info, Mint>,
     metadata_account: &UncheckedAccount<'info>,
 ) -> Result<Metadata> {
-    let (key, _) = Pubkey::find_program_address(
-        &[
-            mpl_token_metadata::state::PREFIX.as_bytes(),
-            mpl_token_metadata::id().as_ref(),
-            nft_mint.key().as_ref(),
-        ],
-        &mpl_token_metadata::id(),
-    );
+    let (key, _) = Metadata::find_pda(&nft_mint.key());
     if key != metadata_account.key() {
         throw_err!(TensorError::BadMetadata);
     }
     // Check account owner (redundant because of find_program_address above, but why not).
-    if *metadata_account.owner != mpl_token_metadata::id() {
+    if *metadata_account.owner != mpl_token_metadata::ID {
         throw_err!(TensorError::BadMetadata);
     }
 
-    Ok(Metadata::from_account_info(metadata_account)?)
+    Ok(Metadata::try_from(&metadata_account.to_account_info())?)
 }
 
 pub struct PnftTransferArgs<'a, 'info> {
@@ -72,174 +57,92 @@ pub struct PnftTransferArgs<'a, 'info> {
     pub delegate: Option<&'a AccountInfo<'info>>,
 }
 
-#[allow(clippy::too_many_arguments)]
-fn prep_pnft_transfer_ix<'info>(
-    args: PnftTransferArgs<'_, 'info>,
-) -> Result<(Instruction, Vec<AccountInfo<'info>>)> {
+fn pnft_transfer_cpi(signer_seeds: Option<&[&[&[u8]]]>, args: PnftTransferArgs) -> Result<()> {
     let metadata = assert_decode_metadata(args.nft_mint, args.nft_metadata)?;
-    let mut builder = TransferBuilder::new();
-    builder
-        .authority(*args.authority_and_owner.key)
-        .token_owner(*args.authority_and_owner.key)
-        .token(args.source_ata.key())
-        .destination_owner(*args.dest_owner.key)
-        .destination(args.dest_ata.key())
-        .mint(args.nft_mint.key())
-        .metadata(args.nft_metadata.key())
-        .edition(args.nft_edition.key())
-        .payer(*args.payer.key);
 
-    let mut account_infos = vec![
-        //   0. `[writable]` Token account
-        args.source_ata.to_account_info(),
-        //   1. `[]` Token account owner
-        args.authority_and_owner.to_account_info(),
-        //   2. `[writable]` Destination token account
-        args.dest_ata.to_account_info(),
-        //   3. `[]` Destination token account owner
-        args.dest_owner.to_account_info(),
-        //   4. `[]` Mint of token asset
-        args.nft_mint.to_account_info(),
-        //   5. `[writable]` Metadata account
-        args.nft_metadata.to_account_info(),
-        //   6. `[optional]` Edition of token asset
-        args.nft_edition.to_account_info(),
-        //   7. `[signer] Transfer authority (token or delegate owner)
-        args.authority_and_owner.to_account_info(),
-        //   8. `[optional, writable]` Owner record PDA
-        //passed in below, if needed
-        //   9. `[optional, writable]` Destination record PDA
-        //passed in below, if needed
-        //   10. `[signer, writable]` Payer
-        args.payer.to_account_info(),
-        //   11. `[]` System Program
-        args.system_program.to_account_info(),
-        //   12. `[]` Instructions sysvar account
-        args.instructions.to_account_info(),
-        //   13. `[]` SPL Token Program
-        args.token_program.to_account_info(),
-        //   14. `[]` SPL Associated Token Account program
-        args.ata_program.to_account_info(),
-        //   15. `[optional]` Token Authorization Rules Program
-        //passed in below, if needed
-        //   16. `[optional]` Token Authorization Rules account
-        //passed in below, if needed
-    ];
+    let mut transfer_cpi = TransferV1CpiBuilder::new(args.token_program);
+    transfer_cpi
+        .authority(args.authority_and_owner)
+        .token_owner(args.authority_and_owner)
+        .token(args.source_ata.as_ref())
+        .destination_owner(args.dest_owner)
+        .destination_token(args.dest_ata.as_ref())
+        .mint(args.nft_mint.as_ref())
+        .metadata(args.nft_metadata.as_ref())
+        .edition(Some(args.nft_edition))
+        .payer(args.payer)
+        .spl_ata_program(args.ata_program)
+        .spl_token_program(args.token_program)
+        .system_program(args.system_program)
+        .sysvar_instructions(args.instructions)
+        .amount(1);
+    // set the authorization data if passed in
+    args.authorization_data
+        .clone()
+        .map(|data| transfer_cpi.authorization_data(data));
 
-    if let Some(standard) = metadata.token_standard {
-        if standard == TokenStandard::ProgrammableNonFungible {
-            // msg!("programmable standard triggered");
-            //1. add to builder
-            builder
-                .owner_token_record(args.owner_token_record.key())
-                .destination_token_record(args.dest_token_record.key());
+    if matches!(
+        metadata.token_standard,
+        Some(TokenStandard::ProgrammableNonFungible)
+    ) {
+        transfer_cpi
+            .token_record(Some(args.owner_token_record.as_ref()))
+            .destination_token_record(Some(args.dest_token_record.as_ref()));
+    }
 
-            //2. add to accounts (if try to pass these for non-pNFT, will get owner errors, since they don't exist)
-            account_infos.push(args.owner_token_record.to_account_info());
-            account_infos.push(args.dest_token_record.to_account_info());
+    // if auth rules passed in, validate & include it in CPI call
+    if let Some(ProgrammableConfig::V1 {
+        rule_set: Some(rule_set),
+    }) = metadata.programmable_config
+    {
+        let rules_acc = args.rules_acc.ok_or(TensorError::BadRuleSet)?;
+
+        // 1. validate
+        if rule_set != *rules_acc.key {
+            throw_err!(TensorError::BadRuleSet);
+        }
+
+        // 2. add to builder
+        transfer_cpi
+            .authorization_rules_program(Some(args.authorization_rules_program))
+            .authorization_rules(Some(rules_acc));
+
+        // 3. invoke delegate if necessary
+        if let Some(delegate) = args.delegate {
+            // replace authority on the builder with the newly assigned delegate
+            transfer_cpi.authority(delegate);
+
+            let mut delegate_cpi = DelegateTransferV1CpiBuilder::new(args.token_program);
+            delegate_cpi
+                .authority(args.authority_and_owner)
+                .delegate(delegate)
+                .token(args.source_ata.as_ref())
+                .mint(args.nft_mint.as_ref())
+                .metadata(args.nft_metadata)
+                .master_edition(Some(args.nft_edition))
+                .payer(args.payer)
+                .spl_token_program(Some(args.token_program))
+                .token_record(Some(args.owner_token_record))
+                .authorization_rules(Some(rules_acc))
+                .authorization_rules_program(Some(args.authorization_rules_program))
+                .amount(1);
+
+            args.authorization_data
+                .map(|data| delegate_cpi.authorization_data(data));
+
+            delegate_cpi.invoke()?;
         }
     }
 
-    //if auth rules passed in, validate & include it in CPI call
-    if let Some(config) = metadata.programmable_config {
-        match config {
-            V1 { rule_set } => {
-                if let Some(rule_set) = rule_set {
-                    // msg!("ruleset triggered");
-                    //safe to unwrap here, it's expected
-                    let rules_acc = args.rules_acc.unwrap();
-
-                    //1. validate
-                    if rule_set != *rules_acc.key {
-                        throw_err!(TensorError::BadRuleSet);
-                    }
-
-                    //2. add to builder
-                    builder.authorization_rules_program(*args.authorization_rules_program.key);
-                    builder.authorization_rules(*rules_acc.key);
-
-                    //3. add to accounts
-                    account_infos.push(args.authorization_rules_program.to_account_info());
-                    account_infos.push(rules_acc.to_account_info());
-
-                    //4. invoke delegate if necessary
-                    if let Some(delegate) = args.delegate {
-                        let delegate_ix = DelegateBuilder::new()
-                            .authority(*args.authority_and_owner.key)
-                            .delegate(delegate.key())
-                            .token(args.source_ata.key())
-                            .mint(args.nft_mint.key())
-                            .metadata(args.nft_metadata.key())
-                            .master_edition(args.nft_edition.key())
-                            .payer(*args.payer.key)
-                            .spl_token_program(args.token_program.key())
-                            .token_record(args.owner_token_record.key())
-                            .authorization_rules(rules_acc.key())
-                            .authorization_rules_program(args.authorization_rules_program.key())
-                            .build(DelegateArgs::TransferV1 {
-                                amount: 1,
-                                authorization_data: args.authorization_data.clone(),
-                            })
-                            .unwrap()
-                            .instruction();
-
-                        let delegate_account_infos = vec![
-                            //   0. `[optional, writable]` Delegate record account
-                            // NO NEED
-                            //   1. `[]` Delegated owner
-                            delegate.to_account_info(),
-                            //   2. `[writable]` Metadata account
-                            args.nft_metadata.to_account_info(),
-                            //   3. `[optional]` Master Edition account
-                            args.nft_edition.to_account_info(),
-                            //   4. `[optional, writable]` Token record account
-                            args.owner_token_record.to_account_info(),
-                            //   5. `[]` Mint account
-                            args.nft_mint.to_account_info(),
-                            //   6. `[optional, writable]` Token account
-                            args.source_ata.to_account_info(),
-                            //   7. `[signer]` Update authority or token owner
-                            args.authority_and_owner.to_account_info(),
-                            //   8. `[signer, writable]` Payer
-                            args.payer.to_account_info(),
-                            //   9. `[]` System Program
-                            args.system_program.to_account_info(),
-                            //   10. `[]` Instructions sysvar account
-                            args.instructions.to_account_info(),
-                            //   11. `[optional]` SPL Token Program
-                            args.token_program.to_account_info(),
-                            // ata_program.to_account_info(),
-                            //   12. `[optional]` Token Authorization Rules program
-                            args.authorization_rules_program.to_account_info(),
-                            //   13. `[optional]` Token Authorization Rules account
-                            rules_acc.to_account_info(),
-                        ];
-
-                        // msg!("invoking delegate");
-                        //always invoked normally
-                        invoke(&delegate_ix, &delegate_account_infos)?;
-
-                        //replace authority on the builder with the newly assigned delegate
-                        builder.authority(delegate.key());
-                        account_infos.push(delegate.to_account_info());
-                    }
-                }
-            }
-        }
+    if let Some(signer_seeds) = signer_seeds {
+        transfer_cpi.invoke_signed(signer_seeds)?;
+    } else {
+        transfer_cpi.invoke()?;
     }
 
-    let transfer_ix = builder
-        .build(TransferArgs::V1 {
-            amount: 1, //currently 1 only
-            authorization_data: args.authorization_data,
-        })
-        .unwrap()
-        .instruction();
-
-    Ok((transfer_ix, account_infos))
+    Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn send_pnft(
     //if passed, use signed_invoke() instead of invoke()
     signer_seeds: Option<&[&[&[u8]]]>,
@@ -250,9 +153,8 @@ pub fn send_pnft(
     // hence have to do a normal transfer
 
     let metadata = assert_decode_metadata(args.nft_mint, args.nft_metadata)?;
-    if metadata.token_standard.is_none()
-        || metadata.token_standard.unwrap() != TokenStandard::ProgrammableNonFungible
-    {
+
+    if metadata.token_standard != Some(TokenStandard::ProgrammableNonFungible) {
         // msg!("non-pnft / no token std, normal transfer");
 
         let ctx = CpiContext::new(
@@ -275,13 +177,7 @@ pub fn send_pnft(
 
     // --------------------------------------- pnft transfer
 
-    let (transfer_ix, account_infos) = prep_pnft_transfer_ix(args)?;
-
-    if let Some(signer_seeds) = signer_seeds {
-        invoke_signed(&transfer_ix, &account_infos, signer_seeds)?;
-    } else {
-        invoke(&transfer_ix, &account_infos)?;
-    }
+    pnft_transfer_cpi(signer_seeds, args)?;
 
     Ok(())
 }

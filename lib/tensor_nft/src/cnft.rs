@@ -1,17 +1,9 @@
-#![allow(dead_code)]
+#![allow(clippy::result_large_err)]
 
-use anchor_lang::{
-    prelude::*,
-    solana_program::{
-        instruction::Instruction,
-        keccak::hashv,
-        program::{invoke, invoke_signed},
-    },
-    InstructionData,
-};
+use anchor_lang::{prelude::*, solana_program::keccak::hashv};
 use mpl_bubblegum::{
-    self,
-    state::metaplex_adapter::{Creator, MetadataArgs},
+    instructions::TransferCpiBuilder,
+    types::{Creator, MetadataArgs},
     utils::get_asset_id,
 };
 
@@ -57,74 +49,40 @@ pub fn transfer_cnft(args: TransferArgs) -> Result<()> {
         signer_seeds,
     } = args;
 
-    let data = mpl_bubblegum::instruction::Transfer {
-        root,
-        data_hash,
-        creator_hash,
-        nonce,
-        index,
-    }
-    .data();
-
-    // Get the account metas for the CPI call
-    // @notice: the reason why we need to manually call `to_account_metas` is because `Bubblegum::transfer` takes
-    //          either the owner or the delegate as an optional signer. Since the delegate is a PDA in this case the
-    //          client side code cannot set its is_signer flag to true, and Anchor drops it's is_signer flag when converting
-    //          CpiContext to account metas on the CPI call since there is no Signer specified in the instructions context.
-    let transfer_accounts = mpl_bubblegum::cpi::accounts::Transfer {
-        tree_authority: tree_authority.clone(),
-        leaf_owner: leaf_owner.clone(),
-        leaf_delegate: leaf_delegate.clone(),
-        new_leaf_owner: new_leaf_owner.clone(),
-        merkle_tree: merkle_tree.clone(),
-        log_wrapper: log_wrapper.clone(),
-        compression_program: compression_program.clone(),
-        system_program: system_program.clone(),
+    let (owner_signer, delegate_signer) = if let Some(signer) = signer {
+        (
+            leaf_owner.is_signer || signer.key() == leaf_owner.key(),
+            leaf_delegate.is_signer || signer.key() == leaf_delegate.key(),
+        )
+    } else {
+        (leaf_owner.is_signer, leaf_delegate.is_signer)
     };
-    let mut transfer_account_metas = transfer_accounts.to_account_metas(Some(true));
-    for acct in transfer_account_metas.iter_mut() {
-        if acct.pubkey == leaf_delegate.key() && leaf_delegate.is_signer {
-            acct.is_signer = true;
-        }
-        if acct.pubkey == leaf_owner.key() && leaf_owner.is_signer {
-            acct.is_signer = true;
-        }
-        //for cpi to work
-        if let Some(signer) = signer {
-            if acct.pubkey == signer.key() {
-                acct.is_signer = true;
-            }
-        }
-    }
-    for node in proof_accounts {
-        transfer_account_metas.push(AccountMeta::new_readonly(*node.key, false));
-    }
 
-    let mut transfer_cpi_account_infos = transfer_accounts.to_account_infos();
-    transfer_cpi_account_infos.extend_from_slice(proof_accounts);
+    let mut transfer_cpi = TransferCpiBuilder::new(bubblegum_program);
+    transfer_cpi
+        .tree_config(tree_authority)
+        .leaf_owner(leaf_owner, owner_signer)
+        .leaf_delegate(leaf_delegate, delegate_signer)
+        .new_leaf_owner(new_leaf_owner)
+        .merkle_tree(merkle_tree)
+        .log_wrapper(log_wrapper)
+        .compression_program(compression_program)
+        .system_program(system_program)
+        .root(root)
+        .data_hash(data_hash)
+        .creator_hash(creator_hash)
+        .nonce(nonce)
+        .index(index);
+
+    for proof in proof_accounts {
+        transfer_cpi.add_remaining_account(proof, false, false);
+    }
 
     if let Some(signer_seeds) = signer_seeds {
-        invoke_signed(
-            &Instruction {
-                program_id: bubblegum_program.key(),
-                accounts: transfer_account_metas,
-                data,
-            },
-            &(transfer_cpi_account_infos[..]),
-            &[signer_seeds],
-        )?;
-
-        return Ok(());
+        transfer_cpi.invoke_signed(&[signer_seeds])?;
+    } else {
+        transfer_cpi.invoke()?;
     }
-
-    invoke(
-        &Instruction {
-            program_id: bubblegum_program.key(),
-            accounts: transfer_account_metas,
-            data,
-        },
-        &(transfer_cpi_account_infos[..]),
-    )?;
 
     Ok(())
 }
