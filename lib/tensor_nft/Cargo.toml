@@ -4,10 +4,10 @@ version = "0.3.0"
 edition = "2021"
 
 [dependencies]
-anchor-lang = "0.26.0"
-anchor-spl = { version = "=0.26.0", features =  ["default"] }
+anchor-lang = "0.29.0"
+anchor-spl = { version = "0.29.0", features =  ["default"] }
 mpl-bubblegum = "1.0.0"
 mpl-token-metadata = "4.0.0"
-spl-account-compression = { version="0.1.10", features = ["cpi"] }
-spl-noop = { version="0.1.3", features=["no-entrypoint"] }
+spl-account-compression = { version = "0.2.0", features = ["cpi"] }
+spl-noop = { version = "0.2.0", features = ["no-entrypoint"] }
 vipers = {path= '../vipers' }

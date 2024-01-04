@@ -16,9 +16,9 @@ use vipers::throw_err;
 use crate::*;
 
 #[inline(never)]
-pub fn assert_decode_metadata<'info>(
-    nft_mint: &Account<'info, Mint>,
-    metadata_account: &UncheckedAccount<'info>,
+pub fn assert_decode_metadata(
+    nft_mint: &Account<Mint>,
+    metadata_account: &UncheckedAccount,
 ) -> Result<Metadata> {
     let (key, _) = Metadata::find_pda(&nft_mint.key());
     if key != metadata_account.key() {
