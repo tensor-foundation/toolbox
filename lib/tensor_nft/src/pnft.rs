@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token,
-    token::{Mint, Token, TokenAccount, Transfer},
+    token::{Token, TokenAccount, Transfer},
 };
 use mpl_token_metadata::{
     accounts::Metadata,
@@ -17,8 +17,8 @@ use crate::*;
 
 #[inline(never)]
 pub fn assert_decode_metadata(
-    nft_mint: &Account<Mint>,
-    metadata_account: &UncheckedAccount,
+    nft_mint: &AccountInfo,
+    metadata_account: &AccountInfo,
 ) -> Result<Metadata> {
     let (key, _) = Metadata::find_pda(&nft_mint.key());
     if key != metadata_account.key() {
@@ -41,7 +41,7 @@ pub struct PnftTransferArgs<'a, 'info> {
     pub source_ata: &'a Account<'info, TokenAccount>,
     pub dest_ata: &'a Account<'info, TokenAccount>,
     pub dest_owner: &'a AccountInfo<'info>,
-    pub nft_mint: &'a Account<'info, Mint>,
+    pub nft_mint: &'a AccountInfo<'info>,
     pub nft_metadata: &'a UncheckedAccount<'info>,
     pub nft_edition: &'a UncheckedAccount<'info>,
     pub system_program: &'a Program<'info, System>,
