@@ -3,7 +3,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token,
+    token::{self, Mint},
     token::{Token, TokenAccount, Transfer},
 };
 use mpl_token_metadata::{
@@ -11,16 +11,16 @@ use mpl_token_metadata::{
     instructions::{DelegateTransferV1CpiBuilder, TransferV1CpiBuilder},
     types::{AuthorizationData, ProgrammableConfig, TokenStandard},
 };
-use vipers::throw_err;
+use vipers::{throw_err, AsKeyRef};
 
 use crate::*;
 
 #[inline(never)]
 pub fn assert_decode_metadata(
-    nft_mint: &AccountInfo,
+    nft_mint: &Pubkey,
     metadata_account: &AccountInfo,
 ) -> Result<Metadata> {
-    let (key, _) = Metadata::find_pda(&nft_mint.key());
+    let (key, _) = Metadata::find_pda(nft_mint);
     if key != metadata_account.key() {
         throw_err!(TensorError::BadMetadata);
     }
@@ -29,7 +29,7 @@ pub fn assert_decode_metadata(
         throw_err!(TensorError::BadMetadata);
     }
 
-    Ok(Metadata::try_from(&metadata_account.to_account_info())?)
+    Ok(Metadata::try_from(metadata_account)?)
 }
 
 pub struct PnftTransferArgs<'a, 'info> {
@@ -41,7 +41,7 @@ pub struct PnftTransferArgs<'a, 'info> {
     pub source_ata: &'a Account<'info, TokenAccount>,
     pub dest_ata: &'a Account<'info, TokenAccount>,
     pub dest_owner: &'a AccountInfo<'info>,
-    pub nft_mint: &'a AccountInfo<'info>,
+    pub nft_mint: &'a Account<'info, Mint>,
     pub nft_metadata: &'a UncheckedAccount<'info>,
     pub nft_edition: &'a UncheckedAccount<'info>,
     pub system_program: &'a Program<'info, System>,
@@ -58,7 +58,7 @@ pub struct PnftTransferArgs<'a, 'info> {
 }
 
 fn pnft_transfer_cpi(signer_seeds: Option<&[&[&[u8]]]>, args: PnftTransferArgs) -> Result<()> {
-    let metadata = assert_decode_metadata(args.nft_mint, args.nft_metadata)?;
+    let metadata = assert_decode_metadata(args.nft_mint.as_key_ref(), args.nft_metadata)?;
 
     let mut transfer_cpi = TransferV1CpiBuilder::new(args.token_program);
     transfer_cpi
@@ -152,7 +152,7 @@ pub fn send_pnft(
     // https://solscan.io/tx/4EbK8Us3c3mixGY4Y6zUx4pRoarWHJ718PtU8vDnAkcC6GmVtBWi8jotZ8koML8c94JPmQB6jHjQnPEBb83Mfv7C
     // hence have to do a normal transfer
 
-    let metadata = assert_decode_metadata(args.nft_mint, args.nft_metadata)?;
+    let metadata = assert_decode_metadata(args.nft_mint.as_key_ref(), args.nft_metadata)?;
 
     if metadata.token_standard != Some(TokenStandard::ProgrammableNonFungible) {
         // msg!("non-pnft / no token std, normal transfer");
