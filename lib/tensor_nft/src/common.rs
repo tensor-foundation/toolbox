@@ -4,7 +4,7 @@ use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction, system_program},
 };
-use anchor_spl::{associated_token::AssociatedToken, token::Token};
+use anchor_spl::{associated_token::AssociatedToken, token_interface::TokenInterface};
 use mpl_bubblegum::types::Creator;
 use mpl_token_metadata::types::TokenStandard;
 use std::slice::Iter;
@@ -198,7 +198,7 @@ pub enum CreatorFeeMode<'a, 'info> {
     },
     Spl {
         associated_token_program: &'a Program<'info, AssociatedToken>,
-        token_program: &'a Program<'info, Token>,
+        token_program: &'a Interface<'info, TokenInterface>,
         system_program: &'a Program<'info, System>,
         currency: &'a AccountInfo<'info>,
         from: &'a AccountInfo<'info>,

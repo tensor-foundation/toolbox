@@ -3,15 +3,14 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Mint},
-    token::{Token, TokenAccount, Transfer},
+    token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 use mpl_token_metadata::{
     accounts::Metadata,
     instructions::{DelegateTransferV1CpiBuilder, TransferV1CpiBuilder},
     types::{AuthorizationData, ProgrammableConfig, TokenStandard},
 };
-use vipers::{throw_err, AsKeyRef};
+use vipers::throw_err;
 
 use crate::*;
 
@@ -38,14 +37,14 @@ pub struct PnftTransferArgs<'a, 'info> {
     //(!) payer can't carry data, has to be a normal KP:
     // https://github.com/solana-labs/solana/blob/bda0c606a19ce1cc44b5ab638ff0b993f612e76c/runtime/src/system_instruction_processor.rs#L197
     pub payer: &'a AccountInfo<'info>,
-    pub source_ata: &'a Account<'info, TokenAccount>,
-    pub dest_ata: &'a Account<'info, TokenAccount>,
+    pub source_ata: &'a InterfaceAccount<'info, TokenAccount>,
+    pub dest_ata: &'a InterfaceAccount<'info, TokenAccount>,
     pub dest_owner: &'a AccountInfo<'info>,
-    pub nft_mint: &'a Account<'info, Mint>,
+    pub nft_mint: &'a InterfaceAccount<'info, Mint>,
     pub nft_metadata: &'a UncheckedAccount<'info>,
     pub nft_edition: &'a UncheckedAccount<'info>,
     pub system_program: &'a Program<'info, System>,
-    pub token_program: &'a Program<'info, Token>,
+    pub token_program: &'a Interface<'info, TokenInterface>,
     pub ata_program: &'a Program<'info, AssociatedToken>,
     pub instructions: &'a UncheckedAccount<'info>,
     pub owner_token_record: &'a UncheckedAccount<'info>,
@@ -58,7 +57,7 @@ pub struct PnftTransferArgs<'a, 'info> {
 }
 
 fn pnft_transfer_cpi(signer_seeds: Option<&[&[&[u8]]]>, args: PnftTransferArgs) -> Result<()> {
-    let metadata = assert_decode_metadata(args.nft_mint.as_key_ref(), args.nft_metadata)?;
+    let metadata = assert_decode_metadata(&args.nft_mint.key(), args.nft_metadata)?;
 
     let mut transfer_cpi = TransferV1CpiBuilder::new(args.token_program);
     transfer_cpi
@@ -152,24 +151,25 @@ pub fn send_pnft(
     // https://solscan.io/tx/4EbK8Us3c3mixGY4Y6zUx4pRoarWHJ718PtU8vDnAkcC6GmVtBWi8jotZ8koML8c94JPmQB6jHjQnPEBb83Mfv7C
     // hence have to do a normal transfer
 
-    let metadata = assert_decode_metadata(args.nft_mint.as_key_ref(), args.nft_metadata)?;
+    let metadata = assert_decode_metadata(&args.nft_mint.key(), args.nft_metadata)?;
 
     if metadata.token_standard != Some(TokenStandard::ProgrammableNonFungible) {
         // msg!("non-pnft / no token std, normal transfer");
 
         let ctx = CpiContext::new(
             args.token_program.to_account_info(),
-            Transfer {
+            TransferChecked {
                 from: args.source_ata.to_account_info(),
                 to: args.dest_ata.to_account_info(),
                 authority: args.authority_and_owner.to_account_info(),
+                mint: args.nft_mint.to_account_info(),
             },
         );
 
         if let Some(signer_seeds) = signer_seeds {
-            token::transfer(ctx.with_signer(signer_seeds), 1)?;
+            token_interface::transfer_checked(ctx.with_signer(signer_seeds), 1, 0)?;
         } else {
-            token::transfer(ctx, 1)?;
+            token_interface::transfer_checked(ctx, 1, 0)?;
         }
 
         return Ok(());
