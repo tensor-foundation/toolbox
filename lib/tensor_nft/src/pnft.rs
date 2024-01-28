@@ -28,7 +28,8 @@ pub fn assert_decode_metadata(
         throw_err!(TensorError::BadMetadata);
     }
 
-    Ok(Metadata::try_from(metadata_account)?)
+    Metadata::safe_deserialize(&metadata_account.try_borrow_data()?)
+        .map_err(|_error| TensorError::BadMetadata.into())
 }
 
 pub struct PnftTransferArgs<'a, 'info> {
