@@ -28,6 +28,9 @@ pub fn assert_decode_metadata(
         throw_err!(TensorError::BadMetadata);
     }
 
+    // We must use `safe_deserialize` since there are variations on the metadata struct
+    // which are not compatible with borsh's default deserialization. Using `try_from` will
+    // fail when there are missing fields.
     Metadata::safe_deserialize(&metadata_account.try_borrow_data()?)
         .map_err(|_error| TensorError::BadMetadata.into())
 }
