@@ -1,3 +1,8 @@
+pub mod extension;
+pub mod token;
+pub mod transfer;
+pub mod wns;
+
 use anchor_lang::{
     solana_program::{account_info::AccountInfo, msg, program_error::ProgramError, pubkey::Pubkey},
     Result,
@@ -7,14 +12,16 @@ use anchor_spl::token_interface::spl_token_2022::{
     state::Mint,
 };
 
-/// Validates a Token 2022 non-fungible mint account.
+use self::extension::get_extension;
+
+/// Validates a "vanilla" Token 2022 non-fungible mint account.
 ///
 /// For non-fungibles assets, the validation consists of checking that the mint:
 /// - has no more than 1 supply
 /// - has 0 decimals
 /// - has no mint authority
 /// - `ExtensionType::MetadataPointer` is present and points to the mint account
-pub fn validate_mint_t22(mint_info: &AccountInfo) -> Result<()> {
+pub fn t22_validate_mint(mint_info: &AccountInfo) -> Result<()> {
     let mint_data = &mint_info.data.borrow();
     let mint = StateWithExtensions::<Mint>::unpack(mint_data)?;
 
@@ -38,10 +45,10 @@ pub fn validate_mint_t22(mint_info: &AccountInfo) -> Result<()> {
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    if let Ok(extension) = mint.get_extension::<MetadataPointer>() {
+    if let Ok(extension) = get_extension::<MetadataPointer>(mint.get_tlv_data()) {
         let metadata_address: Option<Pubkey> = extension.metadata_address.into();
         if metadata_address != Some(*mint_info.key) {
-            msg!("Metadata pointer extension: metadata address mismatch");
+            msg!("Metadata pointer extension: metadata address should be the mint itself");
             return Err(ProgramError::InvalidAccountData.into());
         }
     } else {
