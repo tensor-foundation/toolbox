@@ -14,6 +14,8 @@ use anchor_lang::{
         program_error::ProgramError,
         program_option::COption,
         pubkey::Pubkey,
+        rent::Rent,
+        sysvar::Sysvar,
     },
     Key, Result,
 };
@@ -32,6 +34,8 @@ use super::extension::{get_extension, get_variable_len_extension};
 anchor_lang::declare_id!("wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM");
 
 pub const ROYALTY_BASIS_POINTS_FIELD: &str = "royalty_basis_points";
+
+pub const APPROVE_LEN: usize = 8 + 8;
 
 /// WNS manager account.
 const MANAGER_PUBKEY: Pubkey = Pubkey::new_from_array([
@@ -178,7 +182,11 @@ pub fn wns_validate_mint(mint_info: &AccountInfo) -> Result<u16> {
 ///
 /// The current implementation "manually" creates the instruction data and invokes the
 /// WNS program. This is necessary because there is no WNS crate available.
-pub fn wns_approve(accounts: super::wns::ApproveAccounts, amount: u64) -> Result<()> {
+pub fn wns_approve(
+    accounts: super::wns::ApproveAccounts,
+    amount: u64,
+    expected_fee: u64,
+) -> Result<()> {
     // instruction data
     let mut data = vec![69, 74, 217, 36, 115, 117, 97, 76];
     data.extend(amount.to_le_bytes());
@@ -189,5 +197,28 @@ pub fn wns_approve(accounts: super::wns::ApproveAccounts, amount: u64) -> Result
         data,
     };
 
-    invoke(&approve_ix, &accounts.to_account_infos()).map_err(|error| error.into())
+    let payer = accounts.payer_address.clone();
+    let approve = accounts.approve_account.clone();
+    // store the previous values for the assert
+    let payer_lamports = payer.lamports();
+    let approve_rent = approve.lamports();
+
+    // delegate the fee payment to WNS
+    let result = invoke(&approve_ix, &accounts.to_account_infos()).map_err(|error| error.into());
+
+    // we take the max value between the minimum rent and the previous rent in case the previous
+    // value is higher than the minimum rent
+    let rent_difference =
+        std::cmp::max(Rent::get()?.minimum_balance(APPROVE_LEN), approve_rent) - approve_rent;
+    // assert that payer was charged the expected fee
+    if (payer_lamports - payer.lamports()) > (expected_fee + rent_difference) {
+        msg!(
+            "Unexpected lamports change: expected {} but got {}",
+            expected_fee + rent_difference,
+            payer_lamports - payer.lamports()
+        );
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    result
 }
