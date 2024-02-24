@@ -7,6 +7,19 @@ use mpl_bubblegum::{
     utils::get_asset_id,
 };
 
+use crate::TCreator;
+
+//into bubblgum
+impl From<TCreator> for Creator {
+    fn from(creator: TCreator) -> Self {
+        Creator {
+            address: creator.address,
+            verified: creator.verified,
+            share: creator.share,
+        }
+    }
+}
+
 pub struct TransferArgs<'a, 'info> {
     pub root: [u8; 32],
     pub nonce: u64,

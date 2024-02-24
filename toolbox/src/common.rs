@@ -5,7 +5,6 @@ use anchor_lang::{
     solana_program::{program::invoke, system_instruction, system_program},
 };
 use anchor_spl::{associated_token::AssociatedToken, token_interface::TokenInterface};
-use mpl_bubblegum::types::Creator;
 use mpl_token_metadata::types::TokenStandard;
 use std::slice::Iter;
 use vipers::prelude::*;
@@ -147,32 +146,10 @@ pub struct TCreator {
     pub share: u8,
 }
 
-//into bubblgum
-impl From<TCreator> for Creator {
-    fn from(creator: TCreator) -> Self {
-        Creator {
-            address: creator.address,
-            verified: creator.verified,
-            share: creator.share,
-        }
-    }
-}
-
 //into token meta
 impl From<TCreator> for mpl_token_metadata::types::Creator {
     fn from(creator: TCreator) -> Self {
         mpl_token_metadata::types::Creator {
-            address: creator.address,
-            verified: creator.verified,
-            share: creator.share,
-        }
-    }
-}
-
-//from bubblegum
-impl From<Creator> for TCreator {
-    fn from(creator: Creator) -> Self {
-        TCreator {
             address: creator.address,
             verified: creator.verified,
             share: creator.share,

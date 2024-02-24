@@ -1368,13 +1368,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "merkle_proof"
-version = "0.1.0"
-dependencies = [
- "anchor-lang 0.29.0",
-]
-
-[[package]]
 name = "merlin"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2468,8 +2461,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "tensor_nft"
-version = "0.4.0"
+name = "tensor-toolbox"
+version = "0.0.1"
 dependencies = [
  "anchor-lang 0.29.0",
  "anchor-spl",

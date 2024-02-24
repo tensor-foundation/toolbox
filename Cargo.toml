@@ -3,18 +3,20 @@
 resolver = "2"
 
 members = [
-    "lib/*"
+    "toolbox",
+    "vipers"
 ]
 
 # size optimization
 # https://github.com/johnthagen/min-sized-rust
+
 [profile.release]
 overflow-checks = true # Enable integer overflow checks.
-lto = true #Optimize the entire binary together, not in isolation
-codegen-units = 1 #use single codegen unit for size optimization
-strip = true  # Automatically strip symbols from the binary.
-opt-level = "z"  # Optimize for size.
+lto = true             # Optimize the entire binary together, not in isolation.
+codegen-units = 1      # Use single codegen unit for size optimization.
+strip = true           # Automatically strip symbols from the binary.
+opt-level = "z"        # Optimize for size.
 
 # additional options (untested)
-# panic = "abort" #dont show stack traces
+# panic = "abort"      # Don't show stack traces.
 # cargo +nightly build-bpf -- -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort
