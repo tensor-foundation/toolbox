@@ -1,9 +1,17 @@
-# Tensor Toolbox
+<h1 align="center">
+  Tensor Toolbox
+</h1>
+<p align="center">
+  <img width="400" alt="Tensor Toolbox" src="https://github.com/tensor-foundation/common-rs/assets/729235/e6a54c5c-bdc1-4c87-9986-6f190d8acd76" />
+</p>
+<p align="center">
+  A set of useful libraries for Solana development.
+</p>
 
-A set of useful libraries for Solana development.
-
-> [!NOTE}
+<!--
+> [!NOTE]
 > All error codes in common libraries to start with `9000`.
+-->
 
 ## License
 
