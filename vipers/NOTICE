@@ -1,4 +1,4 @@
-Copyright 2021 Saber Labs
+Copyright (c) 2021 Saber Labs
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,4 +14,4 @@ limitations under the License.
 
 Modifications:
 
-- 2024-01-04: Updated Anchoer version to 0.29.0
+- 2024-01-04: Updated Anchor version to 0.29.0
