@@ -1,5 +1,5 @@
 <h1 align="center">
-  Tensor <code>common-rs</code>
+  Tensor Toolbox
 </h1>
 <p align="center">
   <img width="400" alt="Tensor Toolbox" src="https://github.com/tensor-foundation/common-rs/assets/729235/e6a54c5c-bdc1-4c87-9986-6f190d8acd76" />
