@@ -13,9 +13,9 @@ token-2022 = []
 anchor-lang = "0.29.0"
 anchor-spl = { version = "0.29.0", features =  ["default"] }
 bytemuck = "1.14"
-mpl-bubblegum = { version="1.0.0", optional=true }
+mpl-bubblegum = { version="1.2.0", optional=true }
 mpl-token-metadata = "4.0.0"
-spl-account-compression = { version = "0.2.0", features = ["cpi"] }
+spl-account-compression = { version = "0.3.0", features = ["cpi"] }
 spl-noop = { version = "0.2.0", features = ["no-entrypoint"] }
 spl-token-metadata-interface = "0.2.0"
 vipers = {path= '../vipers' }
