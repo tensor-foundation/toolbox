@@ -20,6 +20,17 @@ impl From<TCreator> for Creator {
     }
 }
 
+//from bubblegum
+impl From<Creator> for TCreator {
+    fn from(creator: Creator) -> Self {
+        TCreator {
+            address: creator.address,
+            verified: creator.verified,
+            share: creator.share,
+        }
+    }
+}
+
 pub struct TransferArgs<'a, 'info> {
     pub root: [u8; 32],
     pub nonce: u64,
