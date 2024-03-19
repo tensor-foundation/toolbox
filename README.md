@@ -5,7 +5,7 @@
   <img width="400" alt="Tensor Toolbox" src="https://github.com/tensor-foundation/common-rs/assets/729235/e6a54c5c-bdc1-4c87-9986-6f190d8acd76" />
 </p>
 <p align="center">
-  A set of useful libraries for Solana development.
+  A set of useful Rust crates for Solana development.
 </p>
 
 <!--
