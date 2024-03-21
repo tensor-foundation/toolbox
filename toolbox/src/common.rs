@@ -68,12 +68,11 @@ pub fn calc_creators_fee(
     optional_royalty_pct: Option<u16>,
 ) -> Result<u64> {
     // Enforce royalties on pnfts.
-    let adj_optional_royalty_pct =
-        if let Some(TokenStandard::ProgrammableNonFungible) = token_standard {
-            Some(100)
-        } else {
-            optional_royalty_pct
-        };
+    let adj_optional_royalty_pct = match token_standard {
+        Some(TokenStandard::ProgrammableNonFungible)
+        | Some(TokenStandard::ProgrammableNonFungibleEdition) => Some(100),
+        _ => optional_royalty_pct,
+    };
 
     let creator_fee_bps = if let Some(royalty_pct) = adj_optional_royalty_pct {
         require!(royalty_pct <= 100, TensorError::BadRoyaltiesPct);

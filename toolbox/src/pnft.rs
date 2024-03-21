@@ -157,31 +157,31 @@ pub fn send_pnft(
 
     let metadata = assert_decode_metadata(&args.nft_mint.key(), args.nft_metadata)?;
 
-    if metadata.token_standard != Some(TokenStandard::ProgrammableNonFungible) {
-        // msg!("non-pnft / no token std, normal transfer");
+    if matches!(
+        metadata.token_standard,
+        Some(TokenStandard::ProgrammableNonFungible)
+            | Some(TokenStandard::ProgrammableNonFungibleEdition)
+    ) {
+        // pnft transfer
 
-        let ctx = CpiContext::new(
-            args.token_program.to_account_info(),
-            TransferChecked {
-                from: args.source_ata.to_account_info(),
-                to: args.dest_ata.to_account_info(),
-                authority: args.authority_and_owner.to_account_info(),
-                mint: args.nft_mint.to_account_info(),
-            },
-        );
-
-        if let Some(signer_seeds) = signer_seeds {
-            token_interface::transfer_checked(ctx.with_signer(signer_seeds), 1, 0)?;
-        } else {
-            token_interface::transfer_checked(ctx, 1, 0)?;
-        }
-
-        return Ok(());
+        return pnft_transfer_cpi(signer_seeds, args);
     }
 
-    // --------------------------------------- pnft transfer
+    // non-pnft / no token std, normal transfer
 
-    pnft_transfer_cpi(signer_seeds, args)?;
+    let ctx = CpiContext::new(
+        args.token_program.to_account_info(),
+        TransferChecked {
+            from: args.source_ata.to_account_info(),
+            to: args.dest_ata.to_account_info(),
+            authority: args.authority_and_owner.to_account_info(),
+            mint: args.nft_mint.to_account_info(),
+        },
+    );
 
-    Ok(())
+    if let Some(signer_seeds) = signer_seeds {
+        token_interface::transfer_checked(ctx.with_signer(signer_seeds), 1, 0)
+    } else {
+        token_interface::transfer_checked(ctx, 1, 0)
+    }
 }
