@@ -50,9 +50,9 @@ pub struct ApproveAccounts<'info> {
     pub mint: AccountInfo<'info>,
     pub approve_account: AccountInfo<'info>,
     pub payment_mint: Option<AccountInfo<'info>>,
-    pub distribution_address: AccountInfo<'info>,
-    pub payer_address: AccountInfo<'info>,
-    pub distribution: AccountInfo<'info>,
+    pub distribution_token_account: AccountInfo<'info>,
+    pub authority_token_account: AccountInfo<'info>,
+    pub distribution_account: AccountInfo<'info>,
     pub system_program: AccountInfo<'info>,
     pub distribution_program: AccountInfo<'info>,
     pub wns_program: AccountInfo<'info>,
@@ -67,9 +67,9 @@ impl<'info> ApproveAccounts<'info> {
             self.authority,
             self.mint,
             self.approve_account,
-            self.distribution_address,
-            self.payer_address,
-            self.distribution,
+            self.distribution_token_account,
+            self.authority_token_account,
+            self.distribution_account,
             self.system_program,
             self.distribution_program,
             self.wns_program,
@@ -96,9 +96,9 @@ impl<'info> ApproveAccounts<'info> {
                     .map_or(*self.system_program.key, |account| *account.key),
                 false,
             ),
-            AccountMeta::new(*self.distribution_address.key, false),
-            AccountMeta::new(*self.payer_address.key, false),
-            AccountMeta::new(*self.distribution.key, false),
+            AccountMeta::new(*self.distribution_token_account.key, false),
+            AccountMeta::new(*self.authority_token_account.key, false),
+            AccountMeta::new(*self.distribution_account.key, false),
             AccountMeta::new_readonly(*self.system_program.key, false),
             AccountMeta::new_readonly(*self.distribution_program.key, false),
             AccountMeta::new_readonly(*self.token_program.key, false),
@@ -187,8 +187,8 @@ pub fn wns_approve(
     amount: u64,
     expected_fee: u64,
 ) -> Result<()> {
-    // instruction data
-    let mut data = vec![69, 74, 217, 36, 115, 117, 97, 76];
+    // instruction data (the instruction was renamed to `ApproveTransfer`)
+    let mut data = vec![198, 217, 247, 150, 208, 60, 169, 244];
     data.extend(amount.to_le_bytes());
 
     let approve_ix = Instruction {
@@ -197,7 +197,7 @@ pub fn wns_approve(
         data,
     };
 
-    let payer = accounts.payer_address.clone();
+    let payer = accounts.authority_token_account.clone();
     let approve = accounts.approve_account.clone();
     // store the previous values for the assert
     let payer_lamports = payer.lamports();
