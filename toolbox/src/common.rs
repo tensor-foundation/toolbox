@@ -167,6 +167,18 @@ impl From<mpl_token_metadata::types::Creator> for TCreator {
     }
 }
 
+//from token meta
+impl From<mpl_core::types::Creator> for TCreator {
+    fn from(creator: mpl_core::types::Creator) -> Self {
+        TCreator {
+            address: creator.address,
+            share: creator.percentage,
+            // mpl-core does not have a concept of "verified" creator
+            verified: false,
+        }
+    }
+}
+
 #[repr(u8)]
 pub enum CreatorFeeMode<'a, 'info> {
     Sol {
