@@ -167,6 +167,7 @@ impl From<mpl_token_metadata::types::Creator> for TCreator {
     }
 }
 
+#[cfg(feature = "mpl-core")]
 //from token meta
 impl From<mpl_core::types::Creator> for TCreator {
     fn from(creator: mpl_core::types::Creator) -> Self {
