@@ -16,4 +16,6 @@ pub enum TensorError {
     BadMetadata = 9006,
     #[msg("rule set for programmable nft does not match")]
     BadRuleSet = 9007,
+    #[msg("invalid core asset")]
+    InvalidCoreAsset = 9008,
 }

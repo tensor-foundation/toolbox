@@ -21,7 +21,7 @@ use self::extension::get_extension;
 /// - has 0 decimals
 /// - has no mint authority
 /// - `ExtensionType::MetadataPointer` is present and points to the mint account
-pub fn t22_validate_mint(mint_info: &AccountInfo) -> Result<()> {
+pub fn validate_mint(mint_info: &AccountInfo) -> Result<()> {
     let mint_data = &mint_info.data.borrow();
     let mint = StateWithExtensions::<Mint>::unpack(mint_data)?;
 

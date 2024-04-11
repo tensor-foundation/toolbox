@@ -115,7 +115,7 @@ impl<'info> ApproveAccounts<'info> {
 /// - [TODO] has no mint authority (currently not possible to check)
 /// - `ExtensionType::MetadataPointer` is present and points to the mint account
 /// - `ExtensionType::TransferHook` is present and program id equals to WNS program
-pub fn wns_validate_mint(mint_info: &AccountInfo) -> Result<u16> {
+pub fn validate_mint(mint_info: &AccountInfo) -> Result<u16> {
     let mint_data = &mint_info.data.borrow();
     let mint = StateWithExtensions::<Mint>::unpack(mint_data)?;
 
@@ -182,7 +182,7 @@ pub fn wns_validate_mint(mint_info: &AccountInfo) -> Result<u16> {
 ///
 /// The current implementation "manually" creates the instruction data and invokes the
 /// WNS program. This is necessary because there is no WNS crate available.
-pub fn wns_approve(
+pub fn approve(
     accounts: super::wns::ApproveAccounts,
     amount: u64,
     expected_fee: u64,
