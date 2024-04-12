@@ -6,6 +6,7 @@ pub mod error;
 pub mod hash;
 #[cfg(feature = "mpl-core")]
 pub mod metaplex_core;
+pub mod nullable;
 pub mod pnft;
 #[cfg(feature = "token-2022")]
 pub mod token_2022;
@@ -16,4 +17,5 @@ pub use common::*;
 pub use error::*;
 #[cfg(feature = "cnft")]
 pub use hash::*;
+pub use nullable::*;
 pub use pnft::*;
