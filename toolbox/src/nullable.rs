@@ -76,11 +76,11 @@ macro_rules! impl_nullable_for_ux {
             const NONE: Self = 0;
 
             fn is_some(&self) -> bool {
-                *self != 0
+                *self != Self::NONE
             }
 
             fn is_none(&self) -> bool {
-                *self == 0
+                *self == Self::NONE
             }
         }
     };
