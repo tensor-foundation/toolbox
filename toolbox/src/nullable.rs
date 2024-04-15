@@ -72,3 +72,4 @@ impl_nullable_for_ux!(u16);
 impl_nullable_for_ux!(u32);
 impl_nullable_for_ux!(u64);
 impl_nullable_for_ux!(u128);
+impl_nullable_for_ux!(usize);
