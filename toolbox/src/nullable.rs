@@ -57,7 +57,7 @@ impl<T: Nullable> NullableOption<T> {
 
 impl<T: Nullable> Default for NullableOption<T> {
     fn default() -> Self {
-        Self(T::NONE)
+        Self::none()
     }
 }
 
