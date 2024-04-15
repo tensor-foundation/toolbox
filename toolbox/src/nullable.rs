@@ -14,11 +14,13 @@ pub trait Nullable: AnchorSerialize + AnchorDeserialize {
     fn is_none(&self) -> bool;
 }
 
-/// A fixed-size Borsh type that can be used as an `Option<T>` without
-/// requiring extra space to indicate if the value is `Some` or `None`.
+/// Borsh encodes standard `Option`s with either a 1 or 0 representing the `Some` or `None variants.
+/// This means an `Option<Pubkey>` for example, is alternately encoded as 33 bytes or 1 byte.
+/// `NullableOption` type allows creating a fixed-size generic `Option` type that can be used as an `Option<T>` without
+/// requiring extra space to indicate if the value is `Some` or `None`. In the `Pubkey` example it is now
+/// always 32 bytes making it friendly to getProgramAccount calls and creating fixed-size on-chain accounts.
 ///
-/// This requires `T` to implement the `Nullable` trait so that it indicates the
-/// value that is `None`.
+/// This requires `T` to implement the `Nullable` trait so that it defines a `NONE` value and can indicate if it is `Some` or `None`.
 #[repr(C)]
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct NullableOption<T: Nullable>(T);
