@@ -55,6 +55,15 @@ impl<T: Nullable> NullableOption<T> {
     }
 }
 
+impl<T: Nullable> From<Option<T>> for NullableOption<T> {
+    fn from(option: Option<T>) -> Self {
+        match option {
+            Some(value) => Self::new(value),
+            None => Self::none(),
+        }
+    }
+}
+
 impl<T: Nullable> Default for NullableOption<T> {
     fn default() -> Self {
         Self::none()
