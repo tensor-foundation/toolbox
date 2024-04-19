@@ -5,14 +5,14 @@ use anchor_lang::prelude::*;
 /// about whether to clear or do nothing.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Operation<T> {
-    Noop,
+    None,
     Clear,
     Set(T),
 }
 
 impl<T> Operation<T> {
-    pub fn is_noop(&self) -> bool {
-        matches!(self, Operation::Noop)
+    pub fn is_none(&self) -> bool {
+        matches!(self, Operation::None)
     }
 
     pub fn is_clear(&self) -> bool {
@@ -23,11 +23,17 @@ impl<T> Operation<T> {
         matches!(self, Operation::Set(_))
     }
 
-    pub fn to_option(self) -> Option<T> {
+    pub fn value(&self) -> Option<&T> {
         match self {
             Operation::Set(value) => Some(value),
-            Operation::Clear => None,
-            Operation::Noop => panic!("Tried to convert 'Noop' value"),
+            _ => None,
+        }
+    }
+
+    pub fn into_value(self) -> Option<T> {
+        match self {
+            Operation::Set(value) => Some(value),
+            _ => None,
         }
     }
 }
