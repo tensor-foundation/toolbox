@@ -329,7 +329,7 @@ pub fn transfer_lamports<'info>(
     lamports: u64,
 ) -> Result<()> {
     // if the from account is empty, we can use the system program to transfer
-    if from.data_is_empty() {
+    if from.data_is_empty() && from.owner == &system_program::ID {
         invoke(
             &system_instruction::transfer(from.key, to.key, lamports),
             &[from.clone(), to.clone()],
@@ -352,6 +352,10 @@ pub fn transfer_lamports_checked<'info, 'b>(
     let rent = Rent::get()?.minimum_balance(to.data_len());
     if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
         // skip the transfer if the account as the account would not be rent exempt
+        msg!(
+            "Skipping transfer to {}: account would not be rent exempt",
+            to.key
+        );
         Ok(())
     } else {
         transfer_lamports(from, to, lamports)
