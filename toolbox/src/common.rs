@@ -6,6 +6,7 @@ use anchor_lang::{
 };
 use anchor_spl::{associated_token::AssociatedToken, token_interface::TokenInterface};
 use mpl_token_metadata::types::TokenStandard;
+use solana_program::pubkey;
 use std::slice::Iter;
 use vipers::prelude::*;
 
@@ -18,6 +19,13 @@ pub const GAMESHIFT_BROKER_PCT: u16 = 50; // Out of 100
 pub mod gameshift {
     use anchor_lang::declare_id;
     declare_id!("3g2nyraTXqEKke3sTtZw9JtfjCo8Hzw6qhKe8K2hrYuf");
+}
+
+pub mod escrow {
+    use super::*;
+    declare_id!("TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN");
+
+    pub const TSWAP_SINGLETON: Pubkey = pubkey!("4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue");
 }
 
 pub fn calc_fees(
