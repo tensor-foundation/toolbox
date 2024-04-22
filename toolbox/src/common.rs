@@ -328,3 +328,44 @@ pub fn close_account(
     pda_to_close.assign(&system_program::ID);
     pda_to_close.realloc(0, false).map_err(Into::into)
 }
+
+/// Transfers lamports from one account to another, handling the cases where the account
+/// is either a PDA or a system account.
+pub fn transfer_lamports<'info>(
+    from: &AccountInfo<'info>,
+    to: &AccountInfo<'info>,
+    lamports: u64,
+) -> Result<()> {
+    // if the from account is empty, we can use the system program to transfer
+    if from.data_is_empty() && from.owner == &system_program::ID {
+        invoke(
+            &system_instruction::transfer(from.key, to.key, lamports),
+            &[from.clone(), to.clone()],
+        )
+        .map_err(Into::into)
+    } else {
+        transfer_lamports_from_pda(from, to, lamports)
+    }
+}
+
+/// Transfers lamports, skipping the transfer if the `to` account would not be rent exempt.
+///
+/// This is useful when transferring lamports to a new account that may not have been created yet
+/// and the transfer amount is less than the rent exemption.
+pub fn transfer_lamports_checked<'info, 'b>(
+    from: &'b AccountInfo<'info>,
+    to: &'b AccountInfo<'info>,
+    lamports: u64,
+) -> Result<()> {
+    let rent = Rent::get()?.minimum_balance(to.data_len());
+    if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
+        // skip the transfer if the account as the account would not be rent exempt
+        msg!(
+            "Skipping transfer to {}: account would not be rent exempt",
+            to.key
+        );
+        Ok(())
+    } else {
+        transfer_lamports(from, to, lamports)
+    }
+}
