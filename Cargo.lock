@@ -2407,7 +2407,7 @@ dependencies = [
 
 [[package]]
 name = "tensor-toolbox"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
