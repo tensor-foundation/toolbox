@@ -28,6 +28,17 @@ pub mod escrow {
     pub const TSWAP_SINGLETON: Pubkey = pubkey!("4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue");
 }
 
+/// Calculates fee vault shard from a given AccountInfo or Pubkey.
+#[macro_export]
+macro_rules! shard_num {
+    ($account_info:expr) => {
+        &$account_info.key()[31].to_le_bytes()
+    };
+    ($pubkey:expr) => {
+        &$pubkey.as_ref()[31].to_le_bytes()
+    };
+}
+
 pub fn calc_fees(
     amount: u64,
     fee_bps: u16,
