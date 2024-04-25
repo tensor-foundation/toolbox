@@ -1,5 +1,6 @@
 #![allow(clippy::result_large_err)]
 
+use anchor_lang::error::ErrorCode;
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -10,7 +11,7 @@ use mpl_token_metadata::{
     instructions::{DelegateTransferV1CpiBuilder, TransferV1CpiBuilder},
     types::{AuthorizationData, TokenStandard},
 };
-use vipers::throw_err;
+use vipers::{throw_err, unwrap_opt};
 
 use crate::TensorError;
 
@@ -74,10 +75,10 @@ pub struct TransferArgs<'a, 'info> {
     pub spl_ata_program: &'a Program<'info, AssociatedToken>,
 
     /// Sysvar instructions account.
-    pub sysvar_instructions: &'a UncheckedAccount<'info>,
+    pub sysvar_instructions: Option<&'a UncheckedAccount<'info>>,
 
     /// Token Metadata program account.
-    pub token_metadata_program: &'a UncheckedAccount<'info>,
+    pub token_metadata_program: Option<&'a UncheckedAccount<'info>>,
 
     /// Authorization rules program account.
     pub authorization_rules_program: Option<&'a UncheckedAccount<'info>>,
@@ -95,8 +96,13 @@ pub struct TransferArgs<'a, 'info> {
 }
 
 fn cpi_transfer(args: TransferArgs, signer_seeds: Option<&[&[&[u8]]]>) -> Result<()> {
+    let token_metadata_program =
+        unwrap_opt!(args.token_metadata_program, ErrorCode::AccountNotEnoughKeys);
+    let sysvar_instructions =
+        unwrap_opt!(args.sysvar_instructions, ErrorCode::AccountNotEnoughKeys);
+
     // prepares the CPI instruction
-    let mut transfer_cpi = TransferV1CpiBuilder::new(args.token_metadata_program);
+    let mut transfer_cpi = TransferV1CpiBuilder::new(token_metadata_program);
     transfer_cpi
         .authority(args.source)
         .token_owner(args.source)
@@ -110,7 +116,7 @@ fn cpi_transfer(args: TransferArgs, signer_seeds: Option<&[&[&[u8]]]>) -> Result
         .spl_ata_program(args.spl_ata_program)
         .spl_token_program(args.spl_token_program)
         .system_program(args.system_program)
-        .sysvar_instructions(args.sysvar_instructions)
+        .sysvar_instructions(sysvar_instructions)
         .token_record(args.source_token_record.map(|account| account.as_ref()))
         .destination_token_record(
             args.destination_token_record
@@ -133,7 +139,7 @@ fn cpi_transfer(args: TransferArgs, signer_seeds: Option<&[&[&[u8]]]>) -> Result
         // replace authority on the builder with the newly assigned delegate
         transfer_cpi.authority(delegate);
 
-        let mut delegate_cpi = DelegateTransferV1CpiBuilder::new(args.token_metadata_program);
+        let mut delegate_cpi = DelegateTransferV1CpiBuilder::new(token_metadata_program);
         delegate_cpi
             .authority(args.source)
             .delegate(delegate)

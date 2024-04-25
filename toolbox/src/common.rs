@@ -32,7 +32,7 @@ pub mod escrow {
 #[macro_export]
 macro_rules! shard_num {
     ($account_info:expr) => {
-        &$account_info.key()[31].to_le_bytes()
+        &$account_info.key().as_ref()[31].to_le_bytes()
     };
     ($pubkey:expr) => {
         &$pubkey.as_ref()[31].to_le_bytes()
