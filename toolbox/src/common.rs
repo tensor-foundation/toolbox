@@ -33,6 +33,11 @@ pub mod fees {
     declare_id!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");
 }
 
+pub mod mpl_token_auth_rules {
+    use super::*;
+    declare_id!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg");
+}
+
 /// Calculates fee vault shard from a given AccountInfo or Pubkey.
 #[macro_export]
 macro_rules! shard_num {

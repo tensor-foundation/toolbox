@@ -15,6 +15,8 @@ use vipers::{throw_err, unwrap_opt};
 
 use crate::TensorError;
 
+pub use mpl_token_metadata::ID;
+
 #[inline(never)]
 pub fn assert_decode_metadata(mint: &Pubkey, metadata: &AccountInfo) -> Result<Metadata> {
     if *metadata.owner != mpl_token_metadata::ID {
