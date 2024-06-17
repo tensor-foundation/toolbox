@@ -3,7 +3,7 @@
 //! This module provides types and functions to interact with the WNS program
 //! while there is no WNS crate available.
 //!
-//! TODO: This can be removed once the WNS crate is available.
+//! TODO: This can be removed once the WNS crate is available and our programs are compatible with Solana v1.18.
 
 use anchor_lang::{
     solana_program::{
@@ -45,40 +45,53 @@ const MANAGER_PUBKEY: Pubkey = Pubkey::new_from_array([
 
 /// Accounts for the `wns_approve` function.
 pub struct ApproveAccounts<'info> {
+    pub wns_program: AccountInfo<'info>,
     pub payer: AccountInfo<'info>,
     pub authority: AccountInfo<'info>,
     pub mint: AccountInfo<'info>,
     pub approve_account: AccountInfo<'info>,
+    // Defaults to default pubkey, which is the System Program ID.
     pub payment_mint: Option<AccountInfo<'info>>,
-    pub distribution_token_account: AccountInfo<'info>,
-    pub authority_token_account: AccountInfo<'info>,
+    // Anchor Optional account--defaults to WNS program ID.
+    pub distribution_token_account: Option<AccountInfo<'info>>,
+    // Anchor Optional account--defaults to WNS program ID.
+    pub authority_token_account: Option<AccountInfo<'info>>,
     pub distribution_account: AccountInfo<'info>,
     pub system_program: AccountInfo<'info>,
     pub distribution_program: AccountInfo<'info>,
-    pub wns_program: AccountInfo<'info>,
     pub token_program: AccountInfo<'info>,
-    pub associated_token_program: AccountInfo<'info>,
+    pub payment_token_program: Option<AccountInfo<'info>>,
 }
 
 impl<'info> ApproveAccounts<'info> {
     pub fn to_account_infos(self) -> Vec<AccountInfo<'info>> {
+        // Account Infos: order doesn't matter.
         let mut accounts = vec![
+            self.wns_program,
             self.payer,
             self.authority,
             self.mint,
             self.approve_account,
-            self.distribution_token_account,
-            self.authority_token_account,
             self.distribution_account,
             self.system_program,
             self.distribution_program,
-            self.wns_program,
             self.token_program,
-            self.associated_token_program,
         ];
+
+        if let Some(distribution_token_account) = self.distribution_token_account {
+            accounts.push(distribution_token_account);
+        };
+
+        if let Some(authority_token_account) = self.authority_token_account {
+            accounts.push(authority_token_account);
+        }
 
         if let Some(payment_mint) = self.payment_mint {
             accounts.push(payment_mint);
+        }
+
+        if let Some(payment_token_program) = self.payment_token_program {
+            accounts.push(payment_token_program);
         }
 
         accounts
@@ -96,13 +109,26 @@ impl<'info> ApproveAccounts<'info> {
                     .map_or(*self.system_program.key, |account| *account.key),
                 false,
             ),
-            AccountMeta::new(*self.distribution_token_account.key, false),
-            AccountMeta::new(*self.authority_token_account.key, false),
+            // Anchor optional accounts, so either the token account or the WNS program.
+            if let Some(distribution_token_account) = &self.distribution_token_account {
+                AccountMeta::new(*distribution_token_account.key, false)
+            } else {
+                AccountMeta::new_readonly(*self.wns_program.key, false)
+            },
+            if let Some(authority_token_account) = &self.authority_token_account {
+                AccountMeta::new(*authority_token_account.key, false)
+            } else {
+                AccountMeta::new_readonly(*self.wns_program.key, false)
+            },
             AccountMeta::new(*self.distribution_account.key, false),
             AccountMeta::new_readonly(*self.system_program.key, false),
             AccountMeta::new_readonly(*self.distribution_program.key, false),
             AccountMeta::new_readonly(*self.token_program.key, false),
-            AccountMeta::new_readonly(*self.associated_token_program.key, false),
+            if let Some(payment_token_program) = &self.payment_token_program {
+                AccountMeta::new_readonly(*payment_token_program.key, false)
+            } else {
+                AccountMeta::new_readonly(*self.wns_program.key, false)
+            },
         ]
     }
 }
@@ -197,7 +223,7 @@ pub fn approve(
         data,
     };
 
-    let payer = accounts.authority_token_account.clone();
+    let payer = accounts.payer.clone();
     let approve = accounts.approve_account.clone();
     // store the previous values for the assert
     let payer_lamports = payer.lamports();
