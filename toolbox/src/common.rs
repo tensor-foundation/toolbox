@@ -16,6 +16,12 @@ pub const HUNDRED_PCT_BPS: u16 = 10000;
 pub const GAMESHIFT_FEE_BPS: u16 = 200;
 pub const GAMESHIFT_BROKER_PCT: u16 = 50; // Out of 100
 
+pub const SINGLETONS: [Pubkey; 3] = [
+    escrow::TSWAP_SINGLETON,
+    marketplace::TCOMP_SINGLETON,
+    price_lock::TLOCK_SINGLETON,
+];
+
 pub mod gameshift {
     use anchor_lang::declare_id;
     declare_id!("3g2nyraTXqEKke3sTtZw9JtfjCo8Hzw6qhKe8K2hrYuf");
@@ -33,9 +39,23 @@ pub mod fees {
     declare_id!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");
 }
 
+pub mod marketplace {
+    use super::*;
+    declare_id!("TCMPhJdwDryooaGtiocG1u3xcYbRpiJzb283XfCZsDp");
+
+    pub const TCOMP_SINGLETON: Pubkey = pubkey!("q4s8z5dRAt2fKC2tLthBPatakZRXPMx1LfacckSXd4f");
+}
+
 pub mod mpl_token_auth_rules {
     use super::*;
     declare_id!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg");
+}
+
+pub mod price_lock {
+    use super::*;
+    declare_id!("TLoCKic2wGJm7VhZKumih4Lc35fUhYqVMgA4j389Buk");
+
+    pub const TLOCK_SINGLETON: Pubkey = pubkey!("CdXA5Vpg4hqvsmLSKC2cygnJVvsQTrDrrn428nAZQaKz");
 }
 
 /// Calculates fee vault shard from a given AccountInfo or Pubkey.
@@ -389,4 +409,24 @@ pub fn transfer_lamports_checked<'info, 'b>(
     } else {
         transfer_lamports(from, to, lamports)
     }
+}
+
+/// Asserts that the account is a valid fee account: either one of the program singletons or the fee vault.
+pub fn assert_fee_account(fee_vault_info: &AccountInfo, state_info: &AccountInfo) -> Result<()> {
+    let expected_fee_vault = Pubkey::find_program_address(
+        &[
+            b"fee_vault",
+            // Use the last byte of the mint as the fee shard number
+            shard_num!(state_info),
+        ],
+        &fees::ID,
+    )
+    .0;
+
+    require!(
+        fee_vault_info.key == &expected_fee_vault || SINGLETONS.contains(fee_vault_info.key),
+        TensorError::InvalidFeeAccount
+    );
+
+    Ok(())
 }

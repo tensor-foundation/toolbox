@@ -18,4 +18,6 @@ pub enum TensorError {
     BadRuleSet = 9007,
     #[msg("invalid core asset")]
     InvalidCoreAsset = 9008,
+    #[msg("invalid fee account")]
+    InvalidFeeAccount = 9009,
 }
