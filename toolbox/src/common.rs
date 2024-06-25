@@ -12,11 +12,12 @@ use vipers::prelude::*;
 
 use crate::TensorError;
 
-pub const HUNDRED_PCT_BPS: u16 = 10000;
-pub const HUNDRED_PCT: u16 = 100;
-pub const GAMESHIFT_FEE_BPS: u16 = 200;
-pub const GAMESHIFT_BROKER_PCT: u16 = 50; // Out of 100
-pub const BROKER_FEE_PCT: u16 = 50;
+pub const HUNDRED_PCT_BPS: u64 = 10000;
+pub const HUNDRED_PCT: u64 = 100;
+pub const GAMESHIFT_FEE_BPS: u64 = 200;
+pub const GAMESHIFT_BROKER_PCT: u64 = 50; // Out of 100
+pub const BROKER_FEE_PCT: u64 = 50;
+pub const TNSR_DISCOUNT_BP: u64 = 2500;
 
 pub const SINGLETONS: [Pubkey; 3] = [
     escrow::TSWAP_SINGLETON,
@@ -71,33 +72,46 @@ macro_rules! shard_num {
     };
 }
 
-pub fn calc_fees(
-    amount: u64,
-    total_fee_bps: u16,
-    broker_fee_pct: u16,
-    maker_broker_pct: u16,
-    maker_broker: Option<Pubkey>,
-    _taker_broker: Option<Pubkey>,
-) -> Result<(u64, u64, u64)> {
-    let (total_fee_bps, maker_broker_pct) = if maker_broker == Some(crate::gameshift::ID) {
-        // gameshift fee schedule
-        (GAMESHIFT_FEE_BPS, GAMESHIFT_BROKER_PCT)
+pub struct CalcFeesArgs {
+    pub amount: u64,
+    pub total_fee_bps: u64,
+    pub broker_fee_pct: u64,
+    pub maker_broker_pct: u64,
+    pub tnsr_discount: bool,
+}
+
+pub fn calc_fees(args: CalcFeesArgs) -> Result<(u64, u64, u64)> {
+    let CalcFeesArgs {
+        amount,
+        total_fee_bps,
+        broker_fee_pct,
+        maker_broker_pct,
+        tnsr_discount,
+    } = args;
+
+    // Apply the TNSR discount if enabled.
+    let total_fee_bps = if tnsr_discount {
+        unwrap_checked!({
+            total_fee_bps
+                .checked_mul(HUNDRED_PCT_BPS - TNSR_DISCOUNT_BP)?
+                .checked_div(HUNDRED_PCT_BPS)
+        })
     } else {
-        (total_fee_bps, maker_broker_pct)
+        total_fee_bps
     };
 
     // Total fee is calculated from the passed in total_fee_bps and is protocol fee + broker fees.
     let total_fee = unwrap_checked!({
         (amount)
-            .checked_mul(total_fee_bps as u64)?
-            .checked_div(HUNDRED_PCT_BPS as u64)
+            .checked_mul(total_fee_bps)?
+            .checked_div(HUNDRED_PCT_BPS)
     });
 
     // Broker fees are a percentage of the total fee.
     let broker_fees = unwrap_checked!({
         total_fee
-            .checked_mul(broker_fee_pct as u64)?
-            .checked_div(HUNDRED_PCT as u64)
+            .checked_mul(broker_fee_pct)?
+            .checked_div(HUNDRED_PCT)
     });
 
     // Protocol fee is the remainder.
@@ -106,8 +120,8 @@ pub fn calc_fees(
     // Maker broker is a percentage of the total brokers fee.
     let maker_broker_fee = unwrap_checked!({
         broker_fees
-            .checked_mul(maker_broker_pct as u64)?
-            .checked_div(HUNDRED_PCT as u64)
+            .checked_mul(maker_broker_pct)?
+            .checked_div(HUNDRED_PCT)
     });
 
     // Remaining broker fee is the taker broker fee.
@@ -145,7 +159,7 @@ pub fn calc_creators_fee(
     let fee = unwrap_checked!({
         creator_fee_bps
             .checked_mul(amount)?
-            .checked_div(HUNDRED_PCT_BPS as u64)
+            .checked_div(HUNDRED_PCT_BPS)
     });
 
     Ok(fee)
