@@ -13,8 +13,10 @@ use vipers::prelude::*;
 use crate::TensorError;
 
 pub const HUNDRED_PCT_BPS: u16 = 10000;
+pub const HUNDRED_PCT: u16 = 100;
 pub const GAMESHIFT_FEE_BPS: u16 = 200;
 pub const GAMESHIFT_BROKER_PCT: u16 = 50; // Out of 100
+pub const BROKER_FEE_PCT: u16 = 50;
 
 pub const SINGLETONS: [Pubkey; 3] = [
     escrow::TSWAP_SINGLETON,
@@ -83,29 +85,32 @@ pub fn calc_fees(
         (fee_bps, maker_broker_pct)
     };
 
-    let full_fee = unwrap_checked!({
+    // Total fee is protocol and broker fee.
+    let total_fee = unwrap_checked!({
         (fee_bps as u64)
             .checked_mul(amount)?
             .checked_div(HUNDRED_PCT_BPS as u64)
     });
-    let taker_broker_fee = 0; // todo: taker broker not enabled
-    let maker_broker_fee = unwrap_checked!({
-        full_fee
-            .checked_mul(maker_broker_pct as u64)?
-            .checked_div(100)
-    });
-    let protocol_fee = unwrap_checked!({
-        full_fee
-            .checked_sub(maker_broker_fee)
-            .unwrap()
-            .checked_sub(taker_broker_fee)
+
+    // Broker fees are a percentage of the total fee.
+    let broker_fees = unwrap_checked!({
+        total_fee
+            .checked_mul(BROKER_FEE_PCT as u64)?
+            .checked_div(HUNDRED_PCT as u64)
     });
 
-    // Stupidity check, broker should never be higher than main fee (== when zero)
-    require!(
-        protocol_fee >= maker_broker_fee + taker_broker_fee,
-        TensorError::ArithmeticError
-    );
+    // Protocol fee is the remainder.
+    let protocol_fee = unwrap_checked!({ total_fee.checked_sub(broker_fees) });
+
+    // Maker broker is a percentage of the total brokers fee.
+    let maker_broker_fee = unwrap_checked!({
+        broker_fees
+            .checked_mul(maker_broker_pct as u64)?
+            .checked_div(HUNDRED_PCT as u64)
+    });
+
+    // Remaining broker fee is the taker broker fee.
+    let taker_broker_fee = unwrap_int!(broker_fees.checked_sub(maker_broker_fee));
 
     Ok((protocol_fee, maker_broker_fee, taker_broker_fee))
 }
