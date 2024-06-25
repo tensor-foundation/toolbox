@@ -73,29 +73,30 @@ macro_rules! shard_num {
 
 pub fn calc_fees(
     amount: u64,
-    fee_bps: u16,
+    total_fee_bps: u16,
+    broker_fee_pct: u16,
     maker_broker_pct: u16,
     maker_broker: Option<Pubkey>,
     _taker_broker: Option<Pubkey>,
 ) -> Result<(u64, u64, u64)> {
-    let (fee_bps, maker_broker_pct) = if maker_broker == Some(crate::gameshift::ID) {
+    let (total_fee_bps, maker_broker_pct) = if maker_broker == Some(crate::gameshift::ID) {
         // gameshift fee schedule
         (GAMESHIFT_FEE_BPS, GAMESHIFT_BROKER_PCT)
     } else {
-        (fee_bps, maker_broker_pct)
+        (total_fee_bps, maker_broker_pct)
     };
 
-    // Total fee is protocol and broker fee.
+    // Total fee is calculated from the passed in total_fee_bps and is protocol fee + broker fees.
     let total_fee = unwrap_checked!({
-        (fee_bps as u64)
-            .checked_mul(amount)?
+        (amount)
+            .checked_mul(total_fee_bps as u64)?
             .checked_div(HUNDRED_PCT_BPS as u64)
     });
 
     // Broker fees are a percentage of the total fee.
     let broker_fees = unwrap_checked!({
         total_fee
-            .checked_mul(BROKER_FEE_PCT as u64)?
+            .checked_mul(broker_fee_pct as u64)?
             .checked_div(HUNDRED_PCT as u64)
     });
 
