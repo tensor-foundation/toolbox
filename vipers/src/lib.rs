@@ -27,10 +27,10 @@ declare_id!("VipersTest111111111111111111111111111111111");
 /// let seeds: &[&[u8]] = &["test".as_ref() as &[u8], &random.to_bytes()];
 /// let expected = static_pubkey::static_pubkey!("HjTCk2QYVrDPH1emJyrKBjtnooGqTvHfxa8ResZg3Kb4");
 /// assert!(validate_derived_address(
-///   &expected, &vipers::ID, seeds
+///   &expected, &tensor_vipers::ID, seeds
 /// ));
 /// assert!(!validate_derived_address(
-///   &solana_program::system_program::ID, &vipers::ID, seeds
+///   &solana_program::system_program::ID, &tensor_vipers::ID, seeds
 /// ));
 /// ```
 pub fn validate_derived_address(
