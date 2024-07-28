@@ -1,7 +1,7 @@
 [package]
-name = "vipers"
-version = "2.0.6"
-description = "Assorted checks and validations for writing safer Solana programs."
+name = "tensor-vipers"
+version = "1.0.0"
+description = "Assorted checks and validations for writing safer Solana programs. Updated from the original Vipers crate to use Anchor 0.29.0."
 homepage = "https://saber.so"
 repository = "https://github.com/saber-hq/vipers"
 authors = ["Saber Team <team@saber.so>"]
@@ -18,7 +18,9 @@ ata = ["spl-associated-token-account"]
 anchor-lang = "0.29.0"
 anchor-spl = "0.29.0"
 num-traits = "^0.2.14"
-spl-associated-token-account = { version = ">= 1.1.3, < 3.0", features = ["no-entrypoint"], optional = true }
+spl-associated-token-account = { version = ">= 1.1.3, < 3.0", features = [
+    "no-entrypoint",
+], optional = true }
 
 [dev-dependencies]
 spl-token = { version = "^3", features = ["no-entrypoint"] }

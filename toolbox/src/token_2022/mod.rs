@@ -28,6 +28,7 @@ const LIBREPLEX_TRANSFER_HOOK: Pubkey = Pubkey::new_from_array([
     53, 2, 250, 50, 121, 61, 15, 194, 104, 5, 76,
 ]);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RoyaltyInfo {
     /// Royalties fee basis points.
     pub seller_fee: u16,
