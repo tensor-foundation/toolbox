@@ -1,5 +1,8 @@
 [package]
 name = "tensor-toolbox"
+description = "Toolbox of useful Rust utilities for Tensor Foundation's Solana programs"
+repository = "https://github.com/tensor-foundation/toolbox"
+homepage = "https://github.com/tensor-foundation/toolbox"
 version = "0.1.0"
 edition = "2021"
 readme = "../README.md"

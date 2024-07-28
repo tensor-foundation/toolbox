@@ -2129,9 +2129,9 @@ dependencies = [
 
 [[package]]
 name = "spl-memo"
-version = "4.0.1"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58e9bae02de3405079a057fe244c867a08f92d48327d231fc60da831f94caf0a"
+checksum = "f0f180b03318c3dbab3ef4e1e4d46d5211ae3c780940dd0a28695aba4b59a75a"
 dependencies = [
  "solana-program",
 ]
