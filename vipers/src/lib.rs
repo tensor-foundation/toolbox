@@ -21,16 +21,16 @@ declare_id!("VipersTest111111111111111111111111111111111");
 /// # Example
 ///
 /// ```
-/// use vipers::validate_derived_address;
+/// use tensor_vipers::validate_derived_address;
 /// use anchor_lang::solana_program;
 /// let random = solana_program::system_program::ID;
 /// let seeds: &[&[u8]] = &["test".as_ref() as &[u8], &random.to_bytes()];
 /// let expected = static_pubkey::static_pubkey!("HjTCk2QYVrDPH1emJyrKBjtnooGqTvHfxa8ResZg3Kb4");
 /// assert!(validate_derived_address(
-///   &expected, &vipers::ID, seeds
+///   &expected, &tensor_vipers::ID, seeds
 /// ));
 /// assert!(!validate_derived_address(
-///   &solana_program::system_program::ID, &vipers::ID, seeds
+///   &solana_program::system_program::ID, &tensor_vipers::ID, seeds
 /// ));
 /// ```
 pub fn validate_derived_address(
@@ -57,7 +57,7 @@ pub fn now<T: TryFrom<i64>>() -> Result<T> {
 }
 
 pub mod prelude {
-    //! The prelude contains all commonly used components of the crate. All programs should include it via `use vipers::prelude::*;`.
+    //! The prelude contains all commonly used components of the crate. All programs should include it via `use tensor_vipers::prelude::*;`.
 
     pub use super::{
         assert_is_zero_token_account, assert_keys_eq, assert_keys_neq, invariant, now, now_i64,

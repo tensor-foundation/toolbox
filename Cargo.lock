@@ -1244,9 +1244,9 @@ dependencies = [
 
 [[package]]
 name = "mpl-bubblegum"
-version = "1.2.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3cbca5deb859e66a1a21ada94f2eaab3eb5caa4584c0c8ade0efac29a5414b8"
+checksum = "a9eff5ae5cafd1acdf7e7c93359da1eec91dcaede318470d9f68b78e8b7469f4"
 dependencies = [
  "borsh 0.10.3",
  "kaigan",
@@ -2129,9 +2129,9 @@ dependencies = [
 
 [[package]]
 name = "spl-memo"
-version = "4.0.1"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58e9bae02de3405079a057fe244c867a08f92d48327d231fc60da831f94caf0a"
+checksum = "f0f180b03318c3dbab3ef4e1e4d46d5211ae3c780940dd0a28695aba4b59a75a"
 dependencies = [
  "solana-program",
 ]
@@ -2407,7 +2407,7 @@ dependencies = [
 
 [[package]]
 name = "tensor-toolbox"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -2419,7 +2419,19 @@ dependencies = [
  "spl-account-compression",
  "spl-noop",
  "spl-token-metadata-interface",
- "vipers",
+ "tensor-vipers",
+]
+
+[[package]]
+name = "tensor-vipers"
+version = "1.0.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "num-traits",
+ "spl-associated-token-account",
+ "spl-token 3.5.0",
+ "static-pubkey",
 ]
 
 [[package]]
@@ -2563,18 +2575,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "vipers"
-version = "2.0.6"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "num-traits",
- "spl-associated-token-account",
- "spl-token 3.5.0",
- "static-pubkey",
-]
 
 [[package]]
 name = "wasi"

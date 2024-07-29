@@ -46,7 +46,7 @@ macro_rules! assert_throws {
 ///   #[msg("This is my error")]
 ///   MyError
 /// }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// assert_eq!(format_err!(ErrorCode::MyError), "MyError: This is my error");
 /// # Ok(())
 /// # }
@@ -66,7 +66,7 @@ macro_rules! format_err {
 /// # use anchor_lang::prelude::*;
 /// # #[error_code]
 /// # pub enum ErrorCode { MyError }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let fail = false;
 /// if fail {
 ///     return program_err!(MyError);
@@ -97,7 +97,7 @@ macro_rules! log_code_location {
 ///
 /// ```
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let result = unwrap_opt_block!({
 ///     let one: u64 = 1;
 ///     let three: u64 = 3;
@@ -123,7 +123,7 @@ macro_rules! unwrap_opt_block {
 ///
 /// ```
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let result = unwrap_checked!({
 ///   let one: u64 = 1;
 ///   let three: u64 = 3;
@@ -148,7 +148,7 @@ macro_rules! unwrap_checked {
 /// # use anchor_lang::prelude::*;
 /// # #[error_code]
 /// # pub enum ErrorCode { MyError }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let fail = false;
 /// if fail {
 ///     throw_err!(MyError);
@@ -275,7 +275,7 @@ macro_rules! assert_owner {
 /// # use anchor_lang::prelude::*;
 /// # #[error_code]
 /// # pub enum ErrorCode { MyError }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let one = anchor_lang::solana_program::sysvar::clock::ID;
 /// let two = anchor_lang::solana_program::system_program::ID;
 /// assert_keys_eq!(one, two); // throws an error
@@ -287,7 +287,7 @@ macro_rules! assert_owner {
 /// # use anchor_lang::prelude::*;
 /// # #[error_code]
 /// # pub enum ErrorCode { MyError }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let one = anchor_lang::solana_program::sysvar::clock::ID;
 /// let two = anchor_lang::solana_program::system_program::ID;
 /// assert_keys_eq!(one, two, "invalid"); // throws an error
@@ -341,7 +341,7 @@ macro_rules! assert_keys_eq {
 /// # Example
 ///
 /// ```
-/// # #[macro_use] extern crate vipers;
+/// # #[macro_use] extern crate tensor_vipers;
 /// # use anchor_lang::prelude::*;
 /// # use anchor_spl::token::*;
 /// #[error_code]
@@ -358,19 +358,19 @@ macro_rules! assert_keys_eq {
 /// non_zero_account.amount = 10;
 /// assert_throws!({
 ///   assert_is_zero_token_account!(non_zero_account);
-/// }, vipers::VipersError::TokenAccountIsNonZero);
+/// }, tensor_vipers::VipersError::TokenAccountIsNonZero);
 ///
 /// non_zero_account = spl_token::state::Account::default();
 /// non_zero_account.delegate = spl_token::ID.into();
 /// assert_throws!({
 ///   assert_is_zero_token_account!(non_zero_account);
-/// }, vipers::VipersError::TokenAccountIsNonZero);
+/// }, tensor_vipers::VipersError::TokenAccountIsNonZero);
 ///
 /// non_zero_account = spl_token::state::Account::default();
 /// non_zero_account.close_authority = spl_token::ID.into();
 /// assert_throws!({
 ///   assert_is_zero_token_account!(non_zero_account);
-/// }, vipers::VipersError::TokenAccountIsNonZero);
+/// }, tensor_vipers::VipersError::TokenAccountIsNonZero);
 /// # }
 /// ```
 #[macro_export]
@@ -413,7 +413,7 @@ macro_rules! assert_is_zero_token_account {
 /// # use anchor_lang::prelude::*;
 /// # impl From<ErrorCode> for ProgramError { fn from(code: ErrorCode) -> Self { ProgramError::Custom(10) } }
 /// # pub enum ErrorCode { MyError }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let one = Pubkey::default();
 /// let two = Pubkey::default();
 /// assert_keys_neq!(one, two); // throws an error
@@ -466,7 +466,7 @@ macro_rules! assert_keys_neq {
 /// # use anchor_lang::prelude::*;
 /// # impl From<ErrorCode> for ProgramError { fn from(code: ErrorCode) -> Self { ProgramError::Custom(10) } }
 /// # pub enum ErrorCode { MyError }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let one = 1_u64;
 /// let two = 2_u64;
 /// let my_value = unwrap_or_err!(one.checked_sub(2), MyError); // throws an error
@@ -486,7 +486,7 @@ macro_rules! unwrap_or_err {
 ///
 /// ```should_panic
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let one = 1_u64;
 /// let two = 2_u64;
 /// let my_value = unwrap_int!(one.checked_sub(2)); // returns an error
@@ -506,7 +506,7 @@ macro_rules! unwrap_int {
 ///
 /// ```ignore
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// fn my_instruction(ctx: Context<MyAccounts>) -> Result<()> {
 ///     let my_data = &mut ctx.accounts.my_data
 ///     my_data.bump = unwrap_bump!(ctx, "my_data");
@@ -533,7 +533,7 @@ macro_rules! unwrap_bump {
 /// # use anchor_lang::prelude::*;
 /// # #[error_code]
 /// # pub enum ErrorCode { MyError }
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// fn function_returning_result() -> Result<u64> {
 ///     err!(ErrorCode::MyError)
 /// }
@@ -557,7 +557,7 @@ macro_rules! try_or_err {
 ///
 /// ```should_panic
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// invariant!(1 == 2, "incorrect");
 /// # Ok(()) }
 /// ```
@@ -566,7 +566,7 @@ macro_rules! try_or_err {
 ///
 /// ```
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// invariant!(1 == 1, "won't throw");
 /// # Ok(()) }
 /// ```
@@ -575,7 +575,7 @@ macro_rules! try_or_err {
 ///
 /// ```
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// invariant!(1 == 1);
 /// # Ok(()) }
 /// ```
@@ -583,7 +583,7 @@ macro_rules! try_or_err {
 /// You may also use a crate ErrorCode:
 ///
 /// ```
-/// # #[macro_use] extern crate vipers;
+/// # #[macro_use] extern crate tensor_vipers;
 /// # use anchor_lang::prelude::*;
 /// #[error_code]
 /// pub enum ErrorCode { MyError }
@@ -594,10 +594,10 @@ macro_rules! try_or_err {
 /// });
 /// assert_throws!({
 ///   invariant!(1 == 2);
-/// }, vipers::VipersError::InvariantFailed);
+/// }, tensor_vipers::VipersError::InvariantFailed);
 /// assert_throws!({
 ///   invariant!(1 == 2, "this is stupid");
-/// }, vipers::VipersError::InvariantFailed);
+/// }, tensor_vipers::VipersError::InvariantFailed);
 /// assert_throws!({
 ///   invariant!(1 == 2, MyError);
 /// }, ErrorCode::MyError);
@@ -645,7 +645,7 @@ macro_rules! invariant {
 ///
 /// ```should_panic
 /// # use anchor_lang::prelude::*;
-/// # #[macro_use] extern crate vipers; fn main() -> Result<()> {
+/// # #[macro_use] extern crate tensor_vipers; fn main() -> Result<()> {
 /// let one = 1_u64;
 /// let two = 2_u64;
 /// let my_value = unwrap_opt!(one.checked_sub(2), "cannot do this"); // returns an error

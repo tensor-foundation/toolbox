@@ -11,7 +11,7 @@ use mpl_token_metadata::{
     instructions::{DelegateTransferV1CpiBuilder, TransferV1CpiBuilder},
     types::{AuthorizationData, TokenStandard},
 };
-use vipers::{throw_err, unwrap_opt};
+use tensor_vipers::{throw_err, unwrap_opt};
 
 use crate::TensorError;
 

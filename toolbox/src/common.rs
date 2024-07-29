@@ -8,7 +8,7 @@ use anchor_spl::{associated_token::AssociatedToken, token_interface::TokenInterf
 use mpl_token_metadata::types::TokenStandard;
 use solana_program::pubkey;
 use std::slice::Iter;
-use vipers::prelude::*;
+use tensor_vipers::prelude::*;
 
 use crate::TensorError;
 

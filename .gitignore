@@ -65,6 +65,7 @@ __pycache__/
 # IDEs
 .idea/
 .vscode/
+.zed
 
 # KCL jars
 **/lib/jars/
