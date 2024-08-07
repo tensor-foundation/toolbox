@@ -2468,7 +2468,7 @@ dependencies = [
 
 [[package]]
 name = "tensor-toolbox"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -2485,7 +2485,7 @@ dependencies = [
 
 [[package]]
 name = "tensor-vipers"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
