@@ -29,6 +29,8 @@ use anchor_spl::token_interface::spl_token_2022::{
 use spl_token_metadata_interface::state::TokenMetadata;
 use std::str::FromStr;
 
+use crate::TensorError;
+
 use super::extension::{get_extension, get_variable_len_extension};
 
 anchor_lang::declare_id!("wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM");
@@ -201,21 +203,33 @@ pub fn validate_mint(mint_info: &AccountInfo) -> Result<u16> {
     Ok(royalty_basis_points)
 }
 
+pub struct ApproveParams {
+    pub price: u64,
+    pub royalty_fee: u64,
+}
+
+impl ApproveParams {
+    pub fn no_royalties() -> Self {
+        Self {
+            price: 0,
+            royalty_fee: 0,
+        }
+    }
+}
+
 /// Approves a WNS token transfer.
 ///
 /// This needs to be called before any attempt to transfer a WNS token. For transfers
-/// that do not involve royalties payment, set the `amount` to `0`.
+/// that do not involve royalties payment, set the `price` and `royalty_fee` to `0`.
 ///
 /// The current implementation "manually" creates the instruction data and invokes the
 /// WNS program. This is necessary because there is no WNS crate available.
-pub fn approve(
-    accounts: super::wns::ApproveAccounts,
-    amount: u64,
-    expected_fee: u64,
-) -> Result<()> {
+pub fn approve(accounts: super::wns::ApproveAccounts, params: ApproveParams) -> Result<()> {
+    let ApproveParams { price, royalty_fee } = params;
+
     // instruction data (the instruction was renamed to `ApproveTransfer`)
     let mut data = vec![198, 217, 247, 150, 208, 60, 169, 244];
-    data.extend(amount.to_le_bytes());
+    data.extend(price.to_le_bytes());
 
     let approve_ix = Instruction {
         program_id: super::wns::ID,
@@ -225,23 +239,39 @@ pub fn approve(
 
     let payer = accounts.payer.clone();
     let approve = accounts.approve_account.clone();
+
     // store the previous values for the assert
-    let payer_lamports = payer.lamports();
-    let approve_rent = approve.lamports();
+    let initial_payer_lamports = payer.lamports();
+    let initial_approve_rent = approve.lamports();
 
     // delegate the fee payment to WNS
     let result = invoke(&approve_ix, &accounts.to_account_infos()).map_err(|error| error.into());
 
+    let ending_approve_rent = approve.lamports();
+    let ending_payer_lamports = payer.lamports();
+
     // we take the max value between the minimum rent and the previous rent in case the previous
     // value is higher than the minimum rent
-    let rent_difference =
-        std::cmp::max(Rent::get()?.minimum_balance(APPROVE_LEN), approve_rent) - approve_rent;
-    // assert that payer was charged the expected fee
-    if (payer_lamports - payer.lamports()) > (expected_fee + rent_difference) {
+    let rent_difference = std::cmp::max(
+        Rent::get()?.minimum_balance(APPROVE_LEN),
+        ending_approve_rent,
+    )
+    .checked_sub(initial_approve_rent)
+    .ok_or(TensorError::ArithmeticError)?;
+
+    let payer_difference = initial_payer_lamports
+        .checked_sub(ending_payer_lamports)
+        .ok_or(TensorError::ArithmeticError)?;
+    let expected_fee = royalty_fee
+        .checked_add(rent_difference)
+        .ok_or(TensorError::ArithmeticError)?;
+
+    // assert that payer was charged the expected fee: rent + any royalty fee.
+    if payer_difference > expected_fee {
         msg!(
             "Unexpected lamports change: expected {} but got {}",
-            expected_fee + rent_difference,
-            payer_lamports - payer.lamports()
+            expected_fee,
+            payer_difference
         );
         return Err(ProgramError::InvalidAccountData.into());
     }
