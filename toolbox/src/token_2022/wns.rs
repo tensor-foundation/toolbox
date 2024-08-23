@@ -203,6 +203,7 @@ pub fn validate_mint(mint_info: &AccountInfo) -> Result<u16> {
     Ok(royalty_basis_points)
 }
 
+/// Parameters for the `Approve` helper function.
 pub struct ApproveParams<'a> {
     pub price: u64,
     pub royalty_fee: u64,
@@ -210,11 +211,20 @@ pub struct ApproveParams<'a> {
 }
 
 impl<'a> ApproveParams<'a> {
+    /// Creates a new `ApproveParams` instance for no royalties for wallet signer.
     pub fn no_royalties() -> Self {
         Self {
             price: 0,
             royalty_fee: 0,
             signer_seeds: &[],
+        }
+    }
+    /// Creates a new `ApproveParams` instance for no royalties for PDA signer.
+    pub fn no_royalties_with_signer_seeds(signer_seeds: &'a [&'a [&'a [u8]]]) -> Self {
+        Self {
+            price: 0,
+            royalty_fee: 0,
+            signer_seeds,
         }
     }
 }
