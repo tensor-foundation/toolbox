@@ -10,7 +10,7 @@ use anchor_lang::{
         account_info::AccountInfo,
         instruction::{AccountMeta, Instruction},
         msg,
-        program::invoke,
+        program::invoke_signed,
         program_error::ProgramError,
         program_option::COption,
         pubkey::Pubkey,
@@ -203,16 +203,18 @@ pub fn validate_mint(mint_info: &AccountInfo) -> Result<u16> {
     Ok(royalty_basis_points)
 }
 
-pub struct ApproveParams {
+pub struct ApproveParams<'a> {
     pub price: u64,
     pub royalty_fee: u64,
+    pub signer_seeds: &'a [&'a [&'a [u8]]],
 }
 
-impl ApproveParams {
+impl<'a> ApproveParams<'a> {
     pub fn no_royalties() -> Self {
         Self {
             price: 0,
             royalty_fee: 0,
+            signer_seeds: &[],
         }
     }
 }
@@ -225,7 +227,11 @@ impl ApproveParams {
 /// The current implementation "manually" creates the instruction data and invokes the
 /// WNS program. This is necessary because there is no WNS crate available.
 pub fn approve(accounts: super::wns::ApproveAccounts, params: ApproveParams) -> Result<()> {
-    let ApproveParams { price, royalty_fee } = params;
+    let ApproveParams {
+        price,
+        royalty_fee,
+        signer_seeds,
+    } = params;
 
     // instruction data (the instruction was renamed to `ApproveTransfer`)
     let mut data = vec![198, 217, 247, 150, 208, 60, 169, 244];
@@ -245,7 +251,8 @@ pub fn approve(accounts: super::wns::ApproveAccounts, params: ApproveParams) -> 
     let initial_approve_rent = approve.lamports();
 
     // delegate the fee payment to WNS
-    let result = invoke(&approve_ix, &accounts.to_account_infos()).map_err(|error| error.into());
+    let result = invoke_signed(&approve_ix, &accounts.to_account_infos(), signer_seeds)
+        .map_err(|error| error.into());
 
     let ending_approve_rent = approve.lamports();
     let ending_payer_lamports = payer.lamports();
