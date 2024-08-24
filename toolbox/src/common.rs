@@ -63,14 +63,11 @@ pub mod price_lock {
     pub const TLOCK_SINGLETON: Pubkey = pubkey!("CdXA5Vpg4hqvsmLSKC2cygnJVvsQTrDrrn428nAZQaKz");
 }
 
-/// Calculates fee vault shard from a given AccountInfo or Pubkey.
+/// Calculates fee vault shard from a given AccountInfo or Pubkey. Relies on the Anchor `Key` trait.
 #[macro_export]
 macro_rules! shard_num {
-    ($account_info:expr) => {
-        &$account_info.key().as_ref()[31].to_le_bytes()
-    };
-    ($pubkey:expr) => {
-        &$pubkey.as_ref()[31].to_le_bytes()
+    ($value:expr) => {
+        &$value.key().as_ref()[31].to_le_bytes()
     };
 }
 
