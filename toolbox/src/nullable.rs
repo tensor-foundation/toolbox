@@ -3,15 +3,19 @@ use anchor_lang::prelude::*;
 const DEFAULT_PUBKEY: Pubkey = Pubkey::new_from_array([0u8; 32]);
 
 /// Used for Brosh types that can have a `None` value.
-pub trait Nullable: AnchorSerialize + AnchorDeserialize {
+pub trait Nullable: AnchorSerialize + AnchorDeserialize + PartialEq {
     /// The value that represents `None`.
     const NONE: Self;
 
     /// Indicates if the value is `Some`.
-    fn is_some(&self) -> bool;
+    fn is_some(&self) -> bool {
+        *self != Self::NONE
+    }
 
     /// Indicates if the value is `None`.
-    fn is_none(&self) -> bool;
+    fn is_none(&self) -> bool {
+        *self == Self::NONE
+    }
 }
 
 /// Borsh encodes standard `Option`s with either a 1 or 0 representing the `Some` or `None variants.
@@ -72,28 +76,12 @@ impl<T: Nullable> Default for NullableOption<T> {
 
 impl Nullable for Pubkey {
     const NONE: Self = DEFAULT_PUBKEY;
-
-    fn is_some(&self) -> bool {
-        self != &Self::NONE
-    }
-
-    fn is_none(&self) -> bool {
-        self == &Self::NONE
-    }
 }
 
 macro_rules! impl_nullable_for_ux {
     ($ux:ty) => {
         impl Nullable for $ux {
             const NONE: Self = 0;
-
-            fn is_some(&self) -> bool {
-                *self != Self::NONE
-            }
-
-            fn is_none(&self) -> bool {
-                *self == Self::NONE
-            }
         }
     };
 }

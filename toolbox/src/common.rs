@@ -17,7 +17,9 @@ pub const HUNDRED_PCT: u64 = 100;
 pub const GAMESHIFT_FEE_BPS: u64 = 200;
 pub const GAMESHIFT_BROKER_PCT: u64 = 50; // Out of 100
 pub const BROKER_FEE_PCT: u64 = 50;
-pub const TNSR_DISCOUNT_BP: u64 = 2500;
+pub const TNSR_DISCOUNT_BPS: u64 = 2500;
+pub const TCOMP_FEE_BPS: u64 = 200;
+pub const MAKER_BROKER_PCT: u64 = 80; // Out of 100
 
 pub const SINGLETONS: [Pubkey; 3] = [
     escrow::TSWAP_SINGLETON,
@@ -61,14 +63,11 @@ pub mod price_lock {
     pub const TLOCK_SINGLETON: Pubkey = pubkey!("CdXA5Vpg4hqvsmLSKC2cygnJVvsQTrDrrn428nAZQaKz");
 }
 
-/// Calculates fee vault shard from a given AccountInfo or Pubkey.
+/// Calculates fee vault shard from a given AccountInfo or Pubkey. Relies on the Anchor `Key` trait.
 #[macro_export]
 macro_rules! shard_num {
-    ($account_info:expr) => {
-        &$account_info.key().as_ref()[31].to_le_bytes()
-    };
-    ($pubkey:expr) => {
-        &$pubkey.as_ref()[31].to_le_bytes()
+    ($value:expr) => {
+        &$value.key().as_ref()[31].to_le_bytes()
     };
 }
 
@@ -80,7 +79,20 @@ pub struct CalcFeesArgs {
     pub tnsr_discount: bool,
 }
 
-pub fn calc_fees(args: CalcFeesArgs) -> Result<(u64, u64, u64)> {
+/// Fees struct that holds the calculated fees.
+pub struct Fees {
+    /// Taker fee is the total fee sans royalties: protocol fee + broker fees.
+    pub taker_fee: u64,
+    /// Protocol fee is the fee that goes to the protocol, a percentage of the total fee determined by 1 - broker_fee_pct.
+    pub protocol_fee: u64,
+    /// Maker broker fee is the fee that goes to the maker broker: a percentage of the total broker fee.
+    pub maker_broker_fee: u64,
+    /// Taker broker fee is the fee that goes to the taker broker: the remainder of the total broker fee.
+    pub taker_broker_fee: u64,
+}
+
+// Calculate fees for a given amount.
+pub fn calc_fees(args: CalcFeesArgs) -> Result<Fees> {
     let CalcFeesArgs {
         amount,
         total_fee_bps,
@@ -93,7 +105,7 @@ pub fn calc_fees(args: CalcFeesArgs) -> Result<(u64, u64, u64)> {
     let total_fee_bps = if tnsr_discount {
         unwrap_checked!({
             total_fee_bps
-                .checked_mul(HUNDRED_PCT_BPS - TNSR_DISCOUNT_BP)?
+                .checked_mul(HUNDRED_PCT_BPS - TNSR_DISCOUNT_BPS)?
                 .checked_div(HUNDRED_PCT_BPS)
         })
     } else {
@@ -127,7 +139,12 @@ pub fn calc_fees(args: CalcFeesArgs) -> Result<(u64, u64, u64)> {
     // Remaining broker fee is the taker broker fee.
     let taker_broker_fee = unwrap_int!(broker_fees.checked_sub(maker_broker_fee));
 
-    Ok((protocol_fee, maker_broker_fee, taker_broker_fee))
+    Ok(Fees {
+        taker_fee: total_fee,
+        protocol_fee,
+        maker_broker_fee,
+        taker_broker_fee,
+    })
 }
 
 pub fn calc_creators_fee(
