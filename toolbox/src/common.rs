@@ -461,7 +461,8 @@ pub fn assert_fee_account(fee_vault_info: &AccountInfo, state_info: &AccountInfo
     .0;
 
     require!(
-        fee_vault_info.key == &expected_fee_vault || SINGLETONS.contains(fee_vault_info.key),
+        fee_vault_info.key == &expected_fee_vault
+            || &marketplace::TCOMP_SINGLETON == fee_vault_info.key,
         TensorError::InvalidFeeAccount
     );
 
