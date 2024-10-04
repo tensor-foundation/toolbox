@@ -28,7 +28,7 @@ use anchor_spl::token_interface::spl_token_2022::{
 };
 use spl_token_metadata_interface::state::TokenMetadata;
 use std::str::FromStr;
-use tensor_vipers::unwrap_int;
+use tensor_vipers::{unwrap_checked, unwrap_int};
 
 use super::extension::{get_extension, get_variable_len_extension};
 
@@ -273,11 +273,14 @@ pub fn approve(accounts: super::wns::ApproveAccounts, params: ApproveParams) -> 
         initial_approve_rent,
     )
     .checked_sub(initial_approve_rent));
+    // distribution account gets realloced based on creators potentially: overestimate here.
+    let dist_realloc_fee = Rent::get()?.minimum_balance(1024);
+
     let payer_difference = unwrap_int!(initial_payer_lamports.checked_sub(ending_payer_lamports));
     let expected_fee = unwrap_checked!({
         royalty_fee
             .checked_add(rent_difference)?
-            .checked_add(Rent::get()?.minimum_balance(1024)) // distribution account gets realloced based on creators potentially: overestimate here.
+            .checked_add(dist_realloc_fee)
     });
 
     // assert that payer was charged the expected fee: rent + any royalty fee.
