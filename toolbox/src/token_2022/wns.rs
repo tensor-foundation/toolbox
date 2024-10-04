@@ -273,9 +273,12 @@ pub fn approve(accounts: super::wns::ApproveAccounts, params: ApproveParams) -> 
         initial_approve_rent,
     )
     .checked_sub(initial_approve_rent));
-
     let payer_difference = unwrap_int!(initial_payer_lamports.checked_sub(ending_payer_lamports));
-    let expected_fee = unwrap_int!(royalty_fee.checked_add(rent_difference));
+    let expected_fee = unwrap_checked!({
+        royalty_fee
+            .checked_add(rent_difference)?
+            .checked_add(Rent::get()?.minimum_balance(1024)) // distribution account gets realloced based on creators potentially: overestimate here.
+    });
 
     // assert that payer was charged the expected fee: rent + any royalty fee.
     if payer_difference > expected_fee {
