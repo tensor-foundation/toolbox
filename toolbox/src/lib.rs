@@ -8,7 +8,7 @@ pub mod hash;
 pub mod metaplex_core;
 pub mod nullable;
 pub mod operation;
-#[cfg(feature = "token-2022")]
+// #[cfg(feature = "token-2022")]
 pub mod token_2022;
 pub mod token_metadata;
 

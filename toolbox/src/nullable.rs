@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 const DEFAULT_PUBKEY: Pubkey = Pubkey::new_from_array([0u8; 32]);
 
-/// Used for Brosh types that can have a `None` value.
+/// Used for Borsh types that can have a `None` value.
 pub trait Nullable: AnchorSerialize + AnchorDeserialize + PartialEq {
     /// The value that represents `None`.
     const NONE: Self;

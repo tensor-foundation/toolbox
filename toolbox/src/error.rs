@@ -1,23 +1,23 @@
 use anchor_lang::prelude::*;
 
-#[error_code]
+#[error_code(offset = 9001)]
 pub enum TensorError {
     #[msg("bad royalties")]
-    BadRoyaltiesPct = 9001,
+    BadRoyaltiesPct,
     #[msg("insufficient balance")]
-    InsufficientBalance = 9002,
+    InsufficientBalance,
     #[msg("creator mismatch")]
-    CreatorMismatch = 9003,
+    CreatorMismatch,
     #[msg("failed leaf verification")]
-    FailedLeafVerification = 9004,
+    FailedLeafVerification,
     #[msg("arithmetic error")]
-    ArithmeticError = 9005,
+    ArithmeticError,
     #[msg("metadata account does not match")]
-    BadMetadata = 9006,
+    BadMetadata,
     #[msg("rule set for programmable nft does not match")]
-    BadRuleSet = 9007,
+    BadRuleSet,
     #[msg("invalid core asset")]
-    InvalidCoreAsset = 9008,
+    InvalidCoreAsset,
     #[msg("invalid fee account")]
-    InvalidFeeAccount = 9009,
+    InvalidFeeAccount,
 }

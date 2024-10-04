@@ -1,4 +1,5 @@
 //! Helpers for working with the token extension TLV format.
+//! Taken + adapted from https://github.com/solana-labs/solana-program-library/blob/2124f7562ed27a5f03f29c0ea0b77ef0167d5028/token/program-2022/src/extension/mod.rs
 //!
 //! The main purpose of these helpers is to graciously handle unknown extensions.
 

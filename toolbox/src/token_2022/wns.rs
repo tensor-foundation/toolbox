@@ -28,8 +28,7 @@ use anchor_spl::token_interface::spl_token_2022::{
 };
 use spl_token_metadata_interface::state::TokenMetadata;
 use std::str::FromStr;
-
-use crate::TensorError;
+use tensor_vipers::unwrap_int;
 
 use super::extension::{get_extension, get_variable_len_extension};
 
@@ -264,24 +263,19 @@ pub fn approve(accounts: super::wns::ApproveAccounts, params: ApproveParams) -> 
     let result = invoke_signed(&approve_ix, &accounts.to_account_infos(), signer_seeds)
         .map_err(|error| error.into());
 
-    let ending_approve_rent = approve.lamports();
     let ending_payer_lamports = payer.lamports();
 
-    // we take the max value between the minimum rent and the previous rent in case the previous
-    // value is higher than the minimum rent
-    let rent_difference = std::cmp::max(
+    // want to account for potential amount paid in rent.
+    // in case WNS tries to drain to approve account, we cap
+    // the rent difference to the minimum rent.
+    let rent_difference = unwrap_int!(std::cmp::max(
         Rent::get()?.minimum_balance(APPROVE_LEN),
-        ending_approve_rent,
+        initial_approve_rent,
     )
-    .checked_sub(initial_approve_rent)
-    .ok_or(TensorError::ArithmeticError)?;
+    .checked_sub(initial_approve_rent));
 
-    let payer_difference = initial_payer_lamports
-        .checked_sub(ending_payer_lamports)
-        .ok_or(TensorError::ArithmeticError)?;
-    let expected_fee = royalty_fee
-        .checked_add(rent_difference)
-        .ok_or(TensorError::ArithmeticError)?;
+    let payer_difference = unwrap_int!(initial_payer_lamports.checked_sub(ending_payer_lamports));
+    let expected_fee = unwrap_int!(royalty_fee.checked_add(rent_difference));
 
     // assert that payer was charged the expected fee: rent + any royalty fee.
     if payer_difference > expected_fee {
