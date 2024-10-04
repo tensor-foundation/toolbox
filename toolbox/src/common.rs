@@ -21,12 +21,6 @@ pub const TNSR_DISCOUNT_BPS: u64 = 2500;
 pub const TCOMP_FEE_BPS: u64 = 200;
 pub const MAKER_BROKER_PCT: u64 = 80; // Out of 100
 
-pub const SINGLETONS: [Pubkey; 3] = [
-    escrow::TSWAP_SINGLETON,
-    marketplace::TCOMP_SINGLETON,
-    price_lock::TLOCK_SINGLETON,
-];
-
 pub mod gameshift {
     use anchor_lang::declare_id;
     declare_id!("3g2nyraTXqEKke3sTtZw9JtfjCo8Hzw6qhKe8K2hrYuf");
@@ -461,7 +455,8 @@ pub fn assert_fee_account(fee_vault_info: &AccountInfo, state_info: &AccountInfo
     .0;
 
     require!(
-        fee_vault_info.key == &expected_fee_vault || SINGLETONS.contains(fee_vault_info.key),
+        fee_vault_info.key == &expected_fee_vault
+            || &marketplace::TCOMP_SINGLETON == fee_vault_info.key,
         TensorError::InvalidFeeAccount
     );
 
