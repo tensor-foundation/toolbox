@@ -14,17 +14,10 @@ use crate::TensorError;
 
 pub const HUNDRED_PCT_BPS: u64 = 10000;
 pub const HUNDRED_PCT: u64 = 100;
-pub const GAMESHIFT_FEE_BPS: u64 = 200;
-pub const GAMESHIFT_BROKER_PCT: u64 = 50; // Out of 100
 pub const BROKER_FEE_PCT: u64 = 50;
 pub const TNSR_DISCOUNT_BPS: u64 = 2500;
 pub const TCOMP_FEE_BPS: u64 = 200;
 pub const MAKER_BROKER_PCT: u64 = 80; // Out of 100
-
-pub mod gameshift {
-    use anchor_lang::declare_id;
-    declare_id!("3g2nyraTXqEKke3sTtZw9JtfjCo8Hzw6qhKe8K2hrYuf");
-}
 
 pub mod escrow {
     use super::*;
@@ -176,6 +169,7 @@ pub fn calc_creators_fee(
     Ok(fee)
 }
 
+/// Transfers all lamports from a PDA (except for rent) to a destination account.
 pub fn transfer_all_lamports_from_pda<'info>(
     from_pda: &AccountInfo<'info>,
     to: &AccountInfo<'info>,
@@ -186,6 +180,8 @@ pub fn transfer_all_lamports_from_pda<'info>(
     transfer_lamports_from_pda(from_pda, to, to_move)
 }
 
+/// Transfers specified lamports from a PDA to a destination account.
+/// Throws an error if less than rent remains in the PDA.
 pub fn transfer_lamports_from_pda<'info>(
     from_pda: &AccountInfo<'info>,
     to: &AccountInfo<'info>,
@@ -351,6 +347,7 @@ pub fn transfer_creators_fee<'a, 'info>(
                     from_token_acc: from_ata,
                     rent_payer,
                 } => {
+                    // ATA validated on transfer CPI.
                     let current_creator_ata_info = next_account_info(creator_accounts)?;
 
                     anchor_spl::associated_token::create_idempotent(CpiContext::new(
@@ -433,7 +430,8 @@ pub fn transfer_lamports_checked<'info, 'b>(
     if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
         // skip the transfer if the account as the account would not be rent exempt
         msg!(
-            "Skipping transfer to {}: account would not be rent exempt",
+            "Skipping transfer of {} lamports to {}: account would not be rent exempt",
+            lamports,
             to.key
         );
         Ok(())
