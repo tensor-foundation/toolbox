@@ -134,20 +134,20 @@ pub fn calc_fees(args: CalcFeesArgs) -> Result<Fees> {
     })
 }
 
+pub fn is_royalty_enforced(token_standard: Option<TokenStandard>) -> bool {
+    matches!(
+        token_standard,
+        Some(TokenStandard::ProgrammableNonFungible)
+            | Some(TokenStandard::ProgrammableNonFungibleEdition)
+    )
+}
+
 pub fn calc_creators_fee(
     seller_fee_basis_points: u16,
     amount: u64,
-    token_standard: Option<TokenStandard>,
-    optional_royalty_pct: Option<u16>,
+    royalty_pct: Option<u16>,
 ) -> Result<u64> {
-    // Enforce royalties on pnfts.
-    let adj_optional_royalty_pct = match token_standard {
-        Some(TokenStandard::ProgrammableNonFungible)
-        | Some(TokenStandard::ProgrammableNonFungibleEdition) => Some(100),
-        _ => optional_royalty_pct,
-    };
-
-    let creator_fee_bps = if let Some(royalty_pct) = adj_optional_royalty_pct {
+    let creator_fee_bps = if let Some(royalty_pct) = royalty_pct {
         require!(royalty_pct <= 100, TensorError::BadRoyaltiesPct);
 
         // If optional passed, pay optional royalties
