@@ -16,7 +16,7 @@ pub const HUNDRED_PCT_BPS: u64 = 10000;
 pub const HUNDRED_PCT: u64 = 100;
 pub const BROKER_FEE_PCT: u64 = 50;
 pub const TNSR_DISCOUNT_BPS: u64 = 2500;
-pub const TCOMP_FEE_BPS: u64 = 200;
+pub const TAKER_FEE_BPS: u64 = 200;
 pub const MAKER_BROKER_PCT: u64 = 80; // Out of 100
 
 pub mod escrow {
