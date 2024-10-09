@@ -20,8 +20,8 @@ bytemuck = "1.14"
 mpl-bubblegum = { version = "1.4.0", optional = true }
 mpl-core = { version = "0.7.2", optional = true }
 mpl-token-metadata = "4.0.0"
-solana-program = "^1.14, <1.19"
 spl-account-compression = { version = "0.3.0", features = ["cpi"] }
 spl-noop = { version = "0.2.0", features = ["no-entrypoint"] }
 spl-token-metadata-interface = "0.2.0"
 tensor-vipers = { path = '../vipers', version = "1.0.1" }
+tensor-macros = { path = "../macros" }

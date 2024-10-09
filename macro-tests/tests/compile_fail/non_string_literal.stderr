@@ -1,0 +1,5 @@
+error: expected string literal
+ --> tests/compile_fail/non_string_literal.rs:6:35
+  |
+6 |     let _pubkey: Pubkey = pubkey!(invalid); // Should fail: not a string literal
+  |                                   ^^^^^^^

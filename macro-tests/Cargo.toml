@@ -1,0 +1,12 @@
+[package]
+name = "tensor-macros-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+tensor-macros = { path = "../macros" }
+solana-program = "1.14"                # Use the version that matches your Solana SDK version
+
+[dev-dependencies]
+trybuild = "1.0"
