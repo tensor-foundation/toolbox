@@ -2,7 +2,7 @@
 
 resolver = "2"
 
-members = ["toolbox", "vipers"]
+members = ["macros", "macro-tests", "toolbox", "vipers"]
 
 # size optimization
 # https://github.com/johnthagen/min-sized-rust

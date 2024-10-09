@@ -1,0 +1,5 @@
+error[E0432]: unresolved import `solana_pubkey_macro`
+ --> tests/compile_fail/invalid_base58.rs:2:5
+  |
+2 | use solana_pubkey_macro::pubkey;
+  |     ^^^^^^^^^^^^^^^^^^^ use of undeclared crate or module `solana_pubkey_macro`
