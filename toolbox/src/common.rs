@@ -1,12 +1,10 @@
 #![allow(clippy::result_large_err)]
-
 use anchor_lang::{
     prelude::*,
-    solana_program::{program::invoke, system_instruction, system_program},
+    solana_program::{program::invoke, pubkey::Pubkey, system_instruction, system_program},
 };
 use anchor_spl::{associated_token::AssociatedToken, token_interface::TokenInterface};
 use mpl_token_metadata::types::TokenStandard;
-use solana_program::pubkey;
 use std::slice::Iter;
 use tensor_vipers::prelude::*;
 
@@ -19,11 +17,15 @@ pub const TNSR_DISCOUNT_BPS: u64 = 2500;
 pub const TAKER_FEE_BPS: u64 = 200;
 pub const MAKER_BROKER_PCT: u64 = 80; // Out of 100
 
+pub const fn pubkey(base58str: &str) -> Pubkey {
+    Pubkey::new_from_array(five8_const::decode_32_const(base58str))
+}
+
 pub mod escrow {
     use super::*;
     declare_id!("TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN");
 
-    pub const TSWAP_SINGLETON: Pubkey = pubkey!("4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue");
+    pub const TSWAP_SINGLETON: Pubkey = pubkey("4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue");
 }
 
 pub mod fees {
@@ -35,7 +37,7 @@ pub mod marketplace {
     use super::*;
     declare_id!("TCMPhJdwDryooaGtiocG1u3xcYbRpiJzb283XfCZsDp");
 
-    pub const TCOMP_SINGLETON: Pubkey = pubkey!("q4s8z5dRAt2fKC2tLthBPatakZRXPMx1LfacckSXd4f");
+    pub const TCOMP_SINGLETON: Pubkey = pubkey("q4s8z5dRAt2fKC2tLthBPatakZRXPMx1LfacckSXd4f");
 }
 
 pub mod mpl_token_auth_rules {
@@ -47,7 +49,7 @@ pub mod price_lock {
     use super::*;
     declare_id!("TLoCKic2wGJm7VhZKumih4Lc35fUhYqVMgA4j389Buk");
 
-    pub const TLOCK_SINGLETON: Pubkey = pubkey!("CdXA5Vpg4hqvsmLSKC2cygnJVvsQTrDrrn428nAZQaKz");
+    pub const TLOCK_SINGLETON: Pubkey = pubkey("CdXA5Vpg4hqvsmLSKC2cygnJVvsQTrDrrn428nAZQaKz");
 }
 
 /// Calculates fee vault shard from a given AccountInfo or Pubkey. Relies on the Anchor `Key` trait.
