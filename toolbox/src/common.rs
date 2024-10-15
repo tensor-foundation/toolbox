@@ -462,3 +462,41 @@ pub fn assert_fee_account(fee_vault_info: &AccountInfo, state_info: &AccountInfo
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pubkey_constant() {
+        let default_pubkey = pubkey("11111111111111111111111111111111");
+        assert_eq!(default_pubkey, Pubkey::default());
+
+        let p = pubkey("4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue");
+        assert_eq!(
+            p.to_bytes(),
+            [
+                59, 86, 73, 113, 118, 186, 131, 166, 77, 161, 204, 243, 144, 62, 8, 138, 52, 116,
+                86, 213, 41, 159, 32, 94, 252, 208, 28, 78, 220, 101, 76, 105
+            ]
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn pubkey_constant_base58_too_short() {
+        let _p = pubkey("abc");
+    }
+
+    #[test]
+    #[should_panic]
+    fn pubkey_constant_base58_too_long() {
+        let _p = pubkey("abc123456789012345678901234567890123456789012345678901234567890123");
+    }
+
+    #[test]
+    #[should_panic]
+    fn pubkey_constant_base58_empty() {
+        let _p = pubkey("");
+    }
+}
