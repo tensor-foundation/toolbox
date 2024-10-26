@@ -2,13 +2,12 @@
 name = "tensor-vipers"
 version = "1.0.1"
 description = "Assorted checks and validations for writing safer Solana programs. Updated from the original Vipers crate to use Anchor 0.29.0."
-homepage = "https://saber.so"
-repository = "https://github.com/saber-hq/vipers"
-authors = ["Saber Team <team@saber.so>"]
+repository = "https://github.com/tensor-foundation/toolbox"
+homepage = "https://github.com/tensor-foundation/toolbox"
 license = "Apache-2.0"
 edition = "2021"
 readme = "../README.md"
-keywords = ["solana", "saber", "anchor"]
+keywords = ["solana", "anchor"]
 
 [features]
 default = []
