@@ -23,10 +23,12 @@ impl anchor_lang::Id for MetaplexCore {
 }
 
 pub struct CoreAsset {
+    pub pubkey: Pubkey,
     pub collection: Option<Pubkey>,
     pub whitelist_creators: Option<Vec<VerifiedCreatorsSignature>>,
     pub royalty_creators: Option<Vec<Creator>>,
     pub royalty_fee_bps: u16,
+    pub royalty_enforced: bool,
 }
 
 pub fn validate_core_asset(
@@ -61,7 +63,7 @@ pub fn validate_core_asset(
             }
 
             (
-                fetch_plugin::<BaseAssetV1, Royalties>(asset_info, PluginType::Royalties)
+                fetch_plugin::<BaseCollectionV1, Royalties>(collection_info, PluginType::Royalties)
                     .ok()
                     .map(|(_, royalties, _)| royalties),
                 Some(asset_collection),
@@ -91,10 +93,12 @@ pub fn validate_core_asset(
             .ok();
 
     Ok(CoreAsset {
+        pubkey: *asset_info.key,
         collection,
         whitelist_creators: verified_creators,
         royalty_creators: royalties.map(|r| r.creators),
         royalty_fee_bps,
+        royalty_enforced: true,
     })
 }
 
