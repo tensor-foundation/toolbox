@@ -22,6 +22,8 @@ impl anchor_lang::Id for MetaplexCore {
     }
 }
 
+/// Core asset information extracted from the MPL Core program plugins.
+/// Used by Tensor protocols to validate whitelist conditions and pay out royalties in appropriate cases.
 pub struct CoreAsset {
     pub pubkey: Pubkey,
     pub collection: Option<Pubkey>,
@@ -31,6 +33,10 @@ pub struct CoreAsset {
     pub royalty_enforced: bool,
 }
 
+/// Validates a mpl-core asset.
+///
+/// Validates program ownership and if it is part of a collection and extracts royalty and verified creators information
+/// from the appropriate plugins.
 pub fn validate_core_asset(
     asset_info: &AccountInfo,
     maybe_collection_info: Option<&AccountInfo>,
