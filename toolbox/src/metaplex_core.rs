@@ -51,6 +51,10 @@ pub fn validate_core_asset(
 
     let asset = BaseAssetV1::try_from(asset_info)?;
 
+    if asset.key != Key::AssetV1 {
+        return Err(TensorError::InvalidCoreAsset.into());
+    }
+
     // if the asset has a collection, we must validate it, and fetch the royalties from it
     let (mut royalties, collection) =
         if let UpdateAuthority::Collection(asset_collection) = asset.update_authority {
@@ -65,6 +69,11 @@ pub fn validate_core_asset(
             // Collection account must match the one on the asset.
             if asset_collection != *collection_info.key {
                 msg!("Asset collection account does not match the provided collection account");
+                return Err(TensorError::InvalidCoreAsset.into());
+            }
+
+            let collection = BaseCollectionV1::try_from(collection_info)?;
+            if collection.key != Key::CollectionV1 {
                 return Err(TensorError::InvalidCoreAsset.into());
             }
 
