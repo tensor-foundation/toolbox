@@ -3,6 +3,7 @@
 //!
 //! The main purpose of these helpers is to graciously handle unknown extensions.
 
+#[allow(deprecated)]
 use anchor_lang::{
     solana_program::{
         borsh0_10::try_from_slice_unchecked, program_error::ProgramError, program_pack::Pack,
@@ -136,6 +137,7 @@ pub fn get_variable_len_extension<V: Extension + AnchorDeserialize>(
     tlv_data: &[u8],
 ) -> core::result::Result<V, ProgramError> {
     let data = get_extension_bytes::<V>(tlv_data)?;
+    #[allow(deprecated)]
     try_from_slice_unchecked::<V>(data).map_err(|_error| ProgramError::InvalidAccountData)
 }
 
