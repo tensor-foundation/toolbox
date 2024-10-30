@@ -11,8 +11,6 @@ pub mod operation;
 #[cfg(feature = "token-2022")]
 pub mod token_2022;
 pub mod token_metadata;
-#[cfg(feature = "mpl-core")]
-pub mod whitelist;
 
 #[cfg(feature = "cnft")]
 pub use cnft::*;
@@ -22,5 +20,3 @@ pub use error::*;
 pub use hash::*;
 pub use nullable::*;
 pub use operation::Operation;
-#[cfg(feature = "mpl-core")]
-pub use whitelist::*;

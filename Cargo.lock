@@ -2603,7 +2603,6 @@ dependencies = [
  "mpl-bubblegum",
  "mpl-core",
  "mpl-token-metadata",
- "solana-program 1.18.26",
  "spl-account-compression",
  "spl-noop",
  "spl-token-metadata-interface",
