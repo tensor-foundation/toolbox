@@ -1279,9 +1279,9 @@ dependencies = [
 
 [[package]]
 name = "mpl-core"
-version = "0.7.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1d4f516cd9daae872182a50850ab6d5588667e71152d49b0729a32830036b83"
+checksum = "299e6db3f7d9ab8fba383e3c6e88f8869063e694cbeb56da8f1bdd355e255f8f"
 dependencies = [
  "base64 0.22.0",
  "borsh 0.10.3",
@@ -1296,9 +1296,9 @@ dependencies = [
 
 [[package]]
 name = "mpl-token-metadata"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4b2de608098eb2ef2a5392069dea83084967e25a4d69d0380a6bb02454fc0fe"
+checksum = "caf0f61b553e424a6234af1268456972ee66c2222e1da89079242251fa7479e5"
 dependencies = [
  "borsh 0.10.3",
  "num-derive 0.3.3",
@@ -2395,7 +2395,7 @@ dependencies = [
 
 [[package]]
 name = "tensor-toolbox"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",

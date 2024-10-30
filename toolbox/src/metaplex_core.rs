@@ -35,8 +35,13 @@ pub struct CoreAsset {
 
 /// Validates a mpl-core asset.
 ///
-/// Validates program ownership and if it is part of a collection and extracts royalty and verified creators information
-/// from the appropriate plugins.
+/// Ensures the asset and collection, if passed in are:
+/// - owned by mpl-core program
+/// - not burned
+/// - correct discriminator
+/// - collection matches the one stored on the asset
+///
+/// Extracts royalty and verified creators information from the appropriate plugins.
 pub fn validate_core_asset(
     asset_info: &AccountInfo,
     maybe_collection_info: Option<&AccountInfo>,
@@ -50,10 +55,6 @@ pub fn validate_core_asset(
         .map(|c| assert_ownership(c, Key::CollectionV1));
 
     let asset = BaseAssetV1::try_from(asset_info)?;
-
-    if asset.key != Key::AssetV1 {
-        return Err(TensorError::InvalidCoreAsset.into());
-    }
 
     // if the asset has a collection, we must validate it, and fetch the royalties from it
     let (mut royalties, collection) =
@@ -69,11 +70,6 @@ pub fn validate_core_asset(
             // Collection account must match the one on the asset.
             if asset_collection != *collection_info.key {
                 msg!("Asset collection account does not match the provided collection account");
-                return Err(TensorError::InvalidCoreAsset.into());
-            }
-
-            let collection = BaseCollectionV1::try_from(collection_info)?;
-            if collection.key != Key::CollectionV1 {
                 return Err(TensorError::InvalidCoreAsset.into());
             }
 
@@ -115,56 +111,6 @@ pub fn validate_core_asset(
         royalty_fee_bps,
         royalty_enforced: true,
     })
-}
-
-/// Validates a mpl-core asset.
-///
-/// The validation consists of checking that the asset:
-/// - is owned by mpl-core program
-/// - is not burned
-///
-/// This function will return the royalties pulgin with the information
-/// of the basis_points and creators.
-pub fn validate_asset(
-    nft_asset: &AccountInfo,
-    nft_collection: Option<&AccountInfo>,
-) -> Result<Option<Royalties>> {
-    // validate the asset account
-    assert_ownership(nft_asset, Key::AssetV1)?;
-
-    if let Ok((_, plugin, _)) =
-        fetch_plugin::<BaseAssetV1, Royalties>(nft_asset, PluginType::Royalties)
-    {
-        // if we have a royalties plugin on the asset, it will take
-        // precedence over the one in the collection even if one is
-        // present
-        return Ok(Some(plugin));
-    }
-
-    let asset = BaseAssetV1::try_from(nft_asset)?;
-    // if the asset has a collection, we must validate it
-    if let UpdateAuthority::Collection(c) = asset.update_authority {
-        if let Some(collection) = nft_collection {
-            if c != *collection.key {
-                msg!("Asset collection account does not match the provided collection account");
-                return Err(TensorError::InvalidCoreAsset.into());
-            }
-            // validates the collection
-            assert_ownership(collection, Key::CollectionV1)?;
-
-            if let Ok((_, plugin, _)) =
-                fetch_plugin::<BaseCollectionV1, Royalties>(collection, PluginType::Royalties)
-            {
-                return Ok(Some(plugin));
-            }
-        } else {
-            msg!("Asset has a collection but no collection account was provided");
-            return Err(TensorError::InvalidCoreAsset.into());
-        }
-    }
-
-    // validation suceeded but no royalties plugin
-    Ok(None)
 }
 
 #[inline(always)]
