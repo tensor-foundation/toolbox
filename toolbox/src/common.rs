@@ -380,7 +380,9 @@ pub fn transfer_creators_fee<'a, 'info>(
                             )?;
                         }
                         anchor_spl::token_interface::ID => {
-                            let mint = anchor_spl::token_interface::Mint::try_deserialize(&mut &currency.data.borrow()[..])?;
+                            let mint = anchor_spl::token_interface::Mint::try_deserialize(
+                                &mut &currency.data.borrow()[..],
+                            )?;
                             token_2022_transfer_checked(
                                 CpiContext::new(
                                     token_program.to_account_info(),
