@@ -3,12 +3,13 @@ name = "tensor-toolbox"
 description = "Toolbox of useful Rust utilities for Tensor Foundation's Solana programs"
 repository = "https://github.com/tensor-foundation/toolbox"
 homepage = "https://github.com/tensor-foundation/toolbox"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 readme = "../README.md"
 license = "Apache-2.0"
 
 [features]
+default = ["token-2022"]
 cnft = ["dep:mpl-bubblegum"]
 mpl-core = ["dep:mpl-core"]
 token-2022 = []

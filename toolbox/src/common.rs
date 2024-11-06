@@ -8,6 +8,7 @@ use mpl_token_metadata::types::TokenStandard;
 use std::slice::Iter;
 use tensor_vipers::prelude::*;
 
+use crate::token_2022::transfer::transfer_checked as token_2022_transfer_checked;
 use crate::TensorError;
 
 pub const HUNDRED_PCT_BPS: u64 = 10000;
@@ -364,17 +365,38 @@ pub fn transfer_creators_fee<'a, 'info>(
                         },
                     ))?;
 
-                    anchor_spl::token::transfer(
-                        CpiContext::new(
-                            token_program.to_account_info(),
-                            anchor_spl::token::Transfer {
-                                from: from_ata.to_account_info(),
-                                to: current_creator_ata_info.to_account_info(),
-                                authority: from.to_account_info(),
-                            },
-                        ),
-                        creator_fee,
-                    )?;
+                    match token_program.key() {
+                        anchor_spl::token::ID => {
+                            anchor_spl::token::transfer(
+                                CpiContext::new(
+                                    token_program.to_account_info(),
+                                    anchor_spl::token::Transfer {
+                                        from: from_ata.to_account_info(),
+                                        to: current_creator_ata_info.to_account_info(),
+                                        authority: from.to_account_info(),
+                                    },
+                                ),
+                                creator_fee,
+                            )?;
+                        }
+                        anchor_spl::token_interface::ID => {
+                            let mint = anchor_spl::token_interface::Mint::try_deserialize(&mut &currency.data.borrow()[..])?;
+                            token_2022_transfer_checked(
+                                CpiContext::new(
+                                    token_program.to_account_info(),
+                                    anchor_spl::token_interface::TransferChecked {
+                                        from: from_ata.to_account_info(),
+                                        mint: currency.to_account_info(),
+                                        to: current_creator_ata_info.to_account_info(),
+                                        authority: from.to_account_info(),
+                                    },
+                                ),
+                                creator_fee,
+                                mint.decimals,
+                            )?;
+                        }
+                        _ => return Err(ErrorCode::InvalidProgramId.into()),
+                    }
                 }
             }
         }
