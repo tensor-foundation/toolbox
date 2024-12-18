@@ -288,6 +288,7 @@ pub fn transfer_creators_fee<'a, 'info>(
     let mut remaining_fee = creator_fee;
     for creator in creators {
         let current_creator_info = next_account_info(creator_accounts)?;
+
         require!(
             creator.address.eq(current_creator_info.key),
             TensorError::CreatorMismatch
@@ -296,7 +297,7 @@ pub fn transfer_creators_fee<'a, 'info>(
         let pct = creator.share as u64;
         let creator_fee = unwrap_checked!({ pct.checked_mul(creator_fee)?.checked_div(100) });
 
-        match mode {
+        let current_creator_ata_info = match mode {
             CreatorFeeMode::Sol { from: _ } => {
                 // Prevents InsufficientFundsForRent, where creator acc doesn't have enough fee
                 // https://explorer.solana.com/tx/vY5nYA95ELVrs9SU5u7sfU2ucHj4CRd3dMCi1gWrY7MSCBYQLiPqzABj9m8VuvTLGHb9vmhGaGY7mkqPa1NLAFE
@@ -305,6 +306,7 @@ pub fn transfer_creators_fee<'a, 'info>(
                     //skip current creator, we can't pay them
                     continue;
                 }
+                None
             }
             CreatorFeeMode::Spl {
                 associated_token_program: _,
@@ -314,8 +316,11 @@ pub fn transfer_creators_fee<'a, 'info>(
                 from: _,
                 from_token_acc: _,
                 rent_payer: _,
-            } => {}
-        }
+            } => {
+                // ATA validated on transfer CPI.
+                Some(next_account_info(creator_accounts)?)
+            }
+        };
 
         remaining_fee = unwrap_int!(remaining_fee.checked_sub(creator_fee));
         if creator_fee > 0 {
@@ -350,14 +355,14 @@ pub fn transfer_creators_fee<'a, 'info>(
                     from_token_acc: from_ata,
                     rent_payer,
                 } => {
-                    // ATA validated on transfer CPI.
-                    let current_creator_ata_info = next_account_info(creator_accounts)?;
+                    let creator_ata_info =
+                        unwrap_opt!(current_creator_ata_info, "missing creator ata");
 
                     anchor_spl::associated_token::create_idempotent(CpiContext::new(
                         associated_token_program.to_account_info(),
                         anchor_spl::associated_token::Create {
                             payer: rent_payer.to_account_info(),
-                            associated_token: current_creator_ata_info.to_account_info(),
+                            associated_token: creator_ata_info.to_account_info(),
                             authority: current_creator_info.to_account_info(),
                             mint: currency.to_account_info(),
                             system_program: system_program.to_account_info(),
@@ -372,7 +377,7 @@ pub fn transfer_creators_fee<'a, 'info>(
                                     token_program.to_account_info(),
                                     anchor_spl::token::Transfer {
                                         from: from_ata.to_account_info(),
-                                        to: current_creator_ata_info.to_account_info(),
+                                        to: creator_ata_info.to_account_info(),
                                         authority: from.to_account_info(),
                                     },
                                 ),
@@ -389,7 +394,7 @@ pub fn transfer_creators_fee<'a, 'info>(
                                     anchor_spl::token_interface::TransferChecked {
                                         from: from_ata.to_account_info(),
                                         mint: currency.to_account_info(),
-                                        to: current_creator_ata_info.to_account_info(),
+                                        to: creator_ata_info.to_account_info(),
                                         authority: from.to_account_info(),
                                     },
                                 ),
