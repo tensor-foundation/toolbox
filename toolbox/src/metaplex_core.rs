@@ -50,9 +50,9 @@ pub fn validate_core_asset(
     assert_ownership(asset_info, Key::AssetV1)?;
 
     // validates the collection is owned by the MPL Core program
-    maybe_collection_info
-        .as_ref()
-        .map(|c| assert_ownership(c, Key::CollectionV1));
+    if let Some(collection_info) = maybe_collection_info {
+        assert_ownership(collection_info, Key::CollectionV1)?;
+    }
 
     let asset = BaseAssetV1::try_from(asset_info)?;
 
