@@ -31,4 +31,10 @@ pub enum TensorError {
 
     #[msg("invalid whitelist")]
     InvalidWhitelist = 9010,
+
+    #[msg("invalid program owner")]
+    InvalidProgramOwner = 9011,
+
+    #[msg("invalid edition")]
+    InvalidEdition = 9012,
 }

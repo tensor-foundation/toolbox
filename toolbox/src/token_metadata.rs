@@ -7,9 +7,9 @@ use anchor_spl::{
     token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 use mpl_token_metadata::{
-    accounts::Metadata,
+    accounts::{Edition, MasterEdition, Metadata},
     instructions::{DelegateTransferV1CpiBuilder, TransferV1CpiBuilder},
-    types::{AuthorizationData, TokenStandard},
+    types::{AuthorizationData, Key as MplKey, TokenStandard},
 };
 use tensor_vipers::{throw_err, unwrap_opt};
 
@@ -20,7 +20,7 @@ pub use mpl_token_metadata::ID;
 #[inline(never)]
 pub fn assert_decode_metadata(mint: &Pubkey, metadata: &AccountInfo) -> Result<Metadata> {
     if *metadata.owner != mpl_token_metadata::ID {
-        throw_err!(TensorError::BadMetadata);
+        throw_err!(TensorError::InvalidProgramOwner);
     }
 
     // We must use `safe_deserialize` since there are variations on the metadata struct
@@ -34,6 +34,36 @@ pub fn assert_decode_metadata(mint: &Pubkey, metadata: &AccountInfo) -> Result<M
     }
 
     Ok(metadata)
+}
+
+#[inline(never)]
+pub fn assert_decode_master_edition(edition: &AccountInfo) -> Result<MasterEdition> {
+    if *edition.owner != mpl_token_metadata::ID {
+        throw_err!(TensorError::InvalidProgramOwner);
+    }
+
+    let edition = MasterEdition::safe_deserialize(&edition.try_borrow_data()?)
+        .map_err(|_error| TensorError::InvalidEdition)?;
+
+    Ok(edition)
+}
+
+#[inline(never)]
+pub fn assert_decode_edition(edition: &AccountInfo) -> Result<Edition> {
+    if *edition.owner != mpl_token_metadata::ID {
+        throw_err!(TensorError::InvalidProgramOwner);
+    }
+
+    let data = edition.try_borrow_data()?;
+
+    if data.is_empty() || data[0] != MplKey::EditionV1 as u8 {
+        throw_err!(TensorError::InvalidEdition);
+    }
+
+    let edition = Edition::from_bytes(&edition.try_borrow_data()?)
+        .map_err(|_error| TensorError::InvalidEdition)?;
+
+    Ok(edition)
 }
 
 /// Transfer Args using AccountInfo types to be more generic.
