@@ -37,4 +37,10 @@ pub enum TensorError {
 
     #[msg("invalid edition")]
     InvalidEdition = 9012,
+
+    #[msg("invalid mint")]
+    InvalidMint = 9013,
+
+    #[msg("invalid owner")]
+    InvalidOwner = 9014,
 }
