@@ -362,9 +362,14 @@ pub fn transfer_creators_fee<'a, 'info>(
                     let creator_ta_info =
                         unwrap_opt!(current_creator_ta_info, "missing creator ata");
 
-                    // If token exists, validate it's the correct mint and owner, otherwise create the ATA.
+                    // Creators can change the owner of their ATA to someone else, causing the instruction calling this
+                    // function to fail.
+                    // To prevent this, we don't idempotently create the ATA. Instead we check if the passed in token
+                    // account exists, and if it is the correct mint and owner, otherwise we create the ATA.
 
-                    if creator_ta_info.data_is_empty() {
+                    if creator_ta_info.data_is_empty()
+                        && creator_ta_info.owner == &system_program::ID
+                    {
                         anchor_spl::associated_token::create(CpiContext::new(
                             associated_token_program.to_account_info(),
                             anchor_spl::associated_token::Create {
