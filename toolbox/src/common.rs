@@ -3,7 +3,12 @@ use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, pubkey::Pubkey, system_instruction, system_program},
 };
-use anchor_spl::{associated_token::AssociatedToken, token_interface::TokenInterface};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::spl_token,
+    token_2022::spl_token_2022,
+    token_interface::{TokenAccount, TokenInterface},
+};
 use mpl_token_metadata::types::TokenStandard;
 use std::slice::Iter;
 use tensor_vipers::prelude::*;
@@ -60,6 +65,8 @@ macro_rules! shard_num {
         &$value.key().as_ref()[31].to_le_bytes()
     };
 }
+
+pub const SPL_TOKEN_IDS: [Pubkey; 2] = [spl_token::ID, spl_token_2022::ID];
 
 pub struct CalcFeesArgs {
     pub amount: u64,
@@ -297,7 +304,7 @@ pub fn transfer_creators_fee<'a, 'info>(
         let pct = creator.share as u64;
         let creator_fee = unwrap_checked!({ pct.checked_mul(creator_fee)?.checked_div(100) });
 
-        let current_creator_ata_info = match mode {
+        let current_creator_ta_info = match mode {
             CreatorFeeMode::Sol { from: _ } => {
                 // Prevents InsufficientFundsForRent, where creator acc doesn't have enough fee
                 // https://explorer.solana.com/tx/vY5nYA95ELVrs9SU5u7sfU2ucHj4CRd3dMCi1gWrY7MSCBYQLiPqzABj9m8VuvTLGHb9vmhGaGY7mkqPa1NLAFE
@@ -323,6 +330,7 @@ pub fn transfer_creators_fee<'a, 'info>(
         };
 
         remaining_fee = unwrap_int!(remaining_fee.checked_sub(creator_fee));
+
         if creator_fee > 0 {
             match mode {
                 CreatorFeeMode::Sol { from } => match from {
@@ -352,23 +360,47 @@ pub fn transfer_creators_fee<'a, 'info>(
                     system_program,
                     currency,
                     from,
-                    from_token_acc: from_ata,
+                    from_token_acc: from_ta,
                     rent_payer,
                 } => {
-                    let creator_ata_info =
-                        unwrap_opt!(current_creator_ata_info, "missing creator ata");
+                    let creator_ta_info =
+                        unwrap_opt!(current_creator_ta_info, "missing creator ata");
 
-                    anchor_spl::associated_token::create_idempotent(CpiContext::new(
-                        associated_token_program.to_account_info(),
-                        anchor_spl::associated_token::Create {
-                            payer: rent_payer.to_account_info(),
-                            associated_token: creator_ata_info.to_account_info(),
-                            authority: current_creator_info.to_account_info(),
-                            mint: currency.to_account_info(),
-                            system_program: system_program.to_account_info(),
-                            token_program: token_program.to_account_info(),
-                        },
-                    ))?;
+                    // Creators can change the owner of their ATA to someone else, causing the instruction calling this
+                    // function to fail.
+                    // To prevent this, we don't idempotently create the ATA. Instead we check if the passed in token
+                    // account exists, and if it is the correct mint and owner, otherwise we create the ATA.
+
+                    if creator_ta_info.data_is_empty()
+                        && creator_ta_info.owner == &system_program::ID
+                    {
+                        anchor_spl::associated_token::create(CpiContext::new(
+                            associated_token_program.to_account_info(),
+                            anchor_spl::associated_token::Create {
+                                payer: rent_payer.to_account_info(),
+                                associated_token: creator_ta_info.to_account_info(),
+                                authority: current_creator_info.to_account_info(),
+                                mint: currency.to_account_info(),
+                                system_program: system_program.to_account_info(),
+                                token_program: token_program.to_account_info(),
+                            },
+                        ))?;
+                    } else {
+                        // Validate the owner is a SPL token program.
+                        require!(
+                            SPL_TOKEN_IDS.contains(creator_ta_info.owner),
+                            ErrorCode::InvalidProgramId
+                        );
+                        // Validate the mint and owner.
+                        let creator_ta =
+                            TokenAccount::try_deserialize(&mut &creator_ta_info.data.borrow()[..])?;
+
+                        require!(creator_ta.mint == currency.key(), TensorError::InvalidMint);
+                        require!(
+                            creator_ta.owner == current_creator_info.key(),
+                            TensorError::InvalidOwner
+                        );
+                    }
 
                     match token_program.key() {
                         anchor_spl::token::ID => {
@@ -376,8 +408,8 @@ pub fn transfer_creators_fee<'a, 'info>(
                                 CpiContext::new(
                                     token_program.to_account_info(),
                                     anchor_spl::token::Transfer {
-                                        from: from_ata.to_account_info(),
-                                        to: creator_ata_info.to_account_info(),
+                                        from: from_ta.to_account_info(),
+                                        to: creator_ta_info.to_account_info(),
                                         authority: from.to_account_info(),
                                     },
                                 ),
@@ -392,9 +424,9 @@ pub fn transfer_creators_fee<'a, 'info>(
                                 CpiContext::new(
                                     token_program.to_account_info(),
                                     anchor_spl::token_interface::TransferChecked {
-                                        from: from_ata.to_account_info(),
+                                        from: from_ta.to_account_info(),
                                         mint: currency.to_account_info(),
-                                        to: creator_ata_info.to_account_info(),
+                                        to: creator_ta_info.to_account_info(),
                                         authority: from.to_account_info(),
                                     },
                                 ),
