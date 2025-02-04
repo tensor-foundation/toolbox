@@ -5,6 +5,8 @@ use anchor_lang::{
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
+    token::spl_token,
+    token_2022::spl_token_2022,
     token_interface::{TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::TokenStandard;
@@ -63,6 +65,8 @@ macro_rules! shard_num {
         &$value.key().as_ref()[31].to_le_bytes()
     };
 }
+
+pub const SPL_TOKEN_IDS: [Pubkey; 2] = [spl_token::ID, spl_token_2022::ID];
 
 pub struct CalcFeesArgs {
     pub amount: u64,
@@ -382,12 +386,16 @@ pub fn transfer_creators_fee<'a, 'info>(
                             },
                         ))?;
                     } else {
+                        // Validate the owner is a SPL token program.
+                        require!(
+                            SPL_TOKEN_IDS.contains(creator_ta_info.owner),
+                            ErrorCode::InvalidProgramId
+                        );
                         // Validate the mint and owner.
                         let creator_ta =
                             TokenAccount::try_deserialize(&mut &creator_ta_info.data.borrow()[..])?;
 
                         require!(creator_ta.mint == currency.key(), TensorError::InvalidMint);
-
                         require!(
                             creator_ta.owner == current_creator_info.key(),
                             TensorError::InvalidOwner
